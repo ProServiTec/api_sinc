@@ -1,0 +1,105 @@
+.faturas-stats {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.faturas-valor-ativas {
+  color: #1e9e5a;
+}
+
+.faturas-valor-pendentes {
+  color: #a9720c;
+}
+
+.faturas-valor-vencidas {
+  color: #c0392b;
+}
+
+.faturas-card-total {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand) inset;
+}
+
+.faturas-licencas {
+  margin-top: 1.25rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.faturas-licencas-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.faturas-licencas-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #1a1a2e;
+}
+
+.faturas-acoes {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.faturas-acao {
+  font-size: 0.85rem;
+  color: #999;
+  cursor: not-allowed;
+}
+
+.faturas-acao-azul {
+  color: rgba(57, 86, 232, 0.5);
+}
+
+.faturas-select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #e2e4eb;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #999;
+  background: #fafafa;
+  cursor: not-allowed;
+}
+
+.faturas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.faturas-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.9rem;
+}
+
+.faturas-item:last-child {
+  border-bottom: none;
+}
+
+.faturas-item-cliente {
+  display: block;
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.faturas-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #666;
+  font-size: 0.85rem;
+}

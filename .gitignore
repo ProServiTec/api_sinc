@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# sync data (temp file-based persistence)
+/data
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

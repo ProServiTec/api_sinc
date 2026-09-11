@@ -1,0 +1,125 @@
+.login-container {
+  --brand: #3956e8;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(160deg, var(--brand), #1c2b7a);
+}
+
+.login-content {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 3rem;
+  width: 100%;
+  max-width: 960px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 420px;
+  padding: 2.5rem 2rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(28, 43, 122, 0.35);
+}
+
+.login-image {
+  flex: 1;
+  min-height: 480px;
+  border-radius: 10px;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 860px) {
+  .login-image {
+    display: none;
+  }
+}
+
+.login-form h1 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: var(--brand);
+}
+
+.login-subtitle {
+  margin: 0 0 0.5rem;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.login-field input {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(57, 86, 232, 0.2);
+}
+
+.login-form button {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.login-form button:hover:not(:disabled) {
+  background: #2d46c9;
+}
+
+.login-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  color: #c0392b;
+  font-size: 0.9rem;
+  margin: 0;
+  text-align: center;
+}
+
+.login-footer {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+  text-align: center;
+}
+
+.login-footer a {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-footer a:hover {
+  text-decoration: underline;
+}

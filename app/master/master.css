@@ -1,0 +1,157 @@
+.master-titulo {
+  margin-bottom: 1.25rem;
+  padding: 0 0.85rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.master-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(57, 86, 232, 0.12);
+  color: var(--brand);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.master-secao {
+  margin-top: 1.75rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.master-secao h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: #1a1a2e;
+}
+
+.master-uso-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+}
+
+.master-uso-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.master-dados-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.master-uso-grid strong {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.master-valor-vencido {
+  color: #c0392b;
+}
+
+.master-valor-pendente {
+  color: #a9720c;
+}
+
+.licencas-acoes {
+  display: flex;
+  gap: 0.6rem;
+  white-space: nowrap;
+}
+
+.licencas-acao-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.licencas-acao-btn:hover {
+  text-decoration: underline;
+}
+
+.licencas-acao-apagar {
+  color: #c0392b;
+}
+
+.licencas-campo-ativo {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.licencas-campo-ativo input {
+  width: auto;
+}
+
+.master-status-pago {
+  color: #1e9e5a;
+  font-weight: 600;
+}
+
+.master-status-pendente {
+  color: #a9720c;
+  font-weight: 600;
+}
+
+.master-status-atrasado {
+  color: #c0392b;
+  font-weight: 600;
+}
+
+.master-status-cancelada {
+  color: #999;
+  font-weight: 600;
+}
+
+.master-revenda-acao-btn {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.master-revenda-acao-btn:hover {
+  text-decoration: underline;
+}
+
+.master-financas-titulos {
+  margin-top: 1.75rem;
+}
+
+.master-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 420px;
+}
+
+.master-config-salvar {
+  align-self: flex-start;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.master-config-sucesso {
+  color: #1e9e5a;
+  font-size: 0.9rem;
+  margin: 0;
+}

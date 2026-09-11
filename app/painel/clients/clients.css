@@ -1,0 +1,383 @@
+.clients-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.clients-novo-btn {
+  flex-shrink: 0;
+  padding: 0.65rem 1.1rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clients-novo-btn:hover {
+  background: #2d46c9;
+}
+
+.painel-card-value-muted {
+  color: #999;
+}
+
+/* Busca */
+
+.clients-busca {
+  margin-top: 1.25rem;
+}
+
+.clients-busca input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.clients-busca input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(57, 86, 232, 0.15);
+}
+
+/* Tabela */
+
+.clients-tabela-wrap {
+  margin-top: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.clients-tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.clients-tabela th {
+  text-align: left;
+  padding: 0.85rem 1.25rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #999;
+  border-bottom: 1px solid #eee;
+}
+
+.clients-tabela td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #f0f0f0;
+  color: #333;
+}
+
+.clients-tabela tr:last-child td {
+  border-bottom: none;
+}
+
+.clients-razao {
+  display: block;
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.clients-tabela-wrap .painel-vazio {
+  padding: 2rem;
+  text-align: center;
+}
+
+.clients-ver-detalhes {
+  color: var(--brand);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.clients-ver-detalhes:hover {
+  text-decoration: underline;
+}
+
+/* Modal "Novo Cliente" */
+
+.clients-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 22, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 50;
+}
+
+.clients-modal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 420px;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(20, 22, 40, 0.3);
+}
+
+.clients-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.clients-modal-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: #1a1a2e;
+}
+
+.clients-modal-fechar {
+  border: none;
+  background: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: #999;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+}
+
+.clients-modal-fechar:hover {
+  color: #333;
+}
+
+.clients-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.clients-field input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.clients-field input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(57, 86, 232, 0.2);
+}
+
+.clients-error {
+  color: #c0392b;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.clients-cadastrar-btn {
+  padding: 0.7rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clients-cadastrar-btn:hover:not(:disabled) {
+  background: #2d46c9;
+}
+
+.clients-cadastrar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Página de detalhes do cliente */
+
+.clients-voltar {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.clients-voltar:hover {
+  text-decoration: underline;
+}
+
+.clients-detalhe-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.clients-detalhe-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1a1a2e;
+}
+
+.clients-detalhe-sub {
+  margin: 0.2rem 0 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.clients-detalhe-card {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.clients-detalhe-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: #1a1a2e;
+}
+
+.clients-dados-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.25rem;
+}
+
+.clients-dados-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.clients-dados-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #999;
+}
+
+.clients-dados-grid strong {
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.clients-licencas-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.clients-licencas-header h2 {
+  margin: 0;
+}
+
+.clients-add-licenca-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.5rem 0.55rem 0.9rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clients-add-licenca-btn:hover {
+  background: #2d46c9;
+}
+
+.clients-add-licenca-valor {
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.clients-licencas-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.clients-licenca-item {
+  padding: 1rem 1.1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.clients-licenca-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.clients-licenca-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #888;
+}
+
+.clients-dispositivos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.clients-dispositivo-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #444;
+}
+
+.clients-dispositivo-sync {
+  margin-left: auto;
+  color: #999;
+  font-size: 0.78rem;
+}
+
+.clients-dot-ativo,
+.clients-dot-inativo {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.clients-dot-ativo {
+  background: #1e9e5a;
+}
+
+.clients-dot-inativo {
+  background: #ccc;
+}
