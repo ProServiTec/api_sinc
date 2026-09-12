@@ -484,3 +484,67 @@
   color: #888;
   text-align: right;
 }
+
+/* Abas por filial e identificação dinâmica */
+
+.vendas-filial-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.vendas-filial-tab {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e2e4eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #555;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.vendas-filial-tab:hover {
+  border-color: var(--brand);
+}
+
+.vendas-filial-tab-ativa {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+.vendas-filial-identificacao {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Empty state */
+
+.vendas-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 4rem 2rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.vendas-empty-state h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1a1a2e;
+}
+
+.vendas-empty-state p {
+  margin: 0;
+  max-width: 420px;
+  font-size: 0.9rem;
+  color: #777;
+}

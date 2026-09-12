@@ -14,6 +14,12 @@ interface Dispositivo {
   ultimo_sync_at: string | null;
 }
 
+interface IdentificacaoFilial {
+  razao_social: string | null;
+  nome_fantasia: string | null;
+  cpf_cnpj: string | null;
+}
+
 interface Licenca {
   id: string;
   nome: string;
@@ -23,6 +29,7 @@ interface Licenca {
   ativo: boolean;
   created_at: string;
   dispositivos: Dispositivo[];
+  identificacao: IdentificacaoFilial | null;
 }
 
 interface LicencaPlano {
@@ -360,6 +367,13 @@ export default function DetalheCliente() {
                         {l.ativo ? "Ativa" : "Inativa"}
                       </span>
                     </div>
+                    {l.identificacao && (
+                      <p className="clients-licenca-identificacao">
+                        {[l.identificacao.razao_social, l.identificacao.nome_fantasia, l.identificacao.cpf_cnpj]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
                     <div className="clients-licenca-meta">
                       {l.cpf_cnpj && <span>{l.cpf_cnpj}</span>}
                       {(l.cidade || l.uf) && (

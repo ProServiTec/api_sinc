@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 import { decryptToken } from "@/lib/clientsLink";
+import { buscarIdentificacaoFilial } from "@/lib/identificacaoFilial";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -74,10 +75,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       dispositivosPorFilial.set(d.filial_id, lista);
     }
 
-    const licencas = filiaisResult.rows.map((f) => ({
-      ...f,
-      dispositivos: dispositivosPorFilial.get(f.id) ?? [],
-    }));
+    // Identificação dinâmica: assim que o sincronizador ativar o banco e
+    // mandar pdv.dados_empresa, mostra a razão social/nome fantasia/CNPJ
+    // reais embaixo da licença — antes disso fica null (ainda não conectou).
+    const licencas = await Promise.all(
+      filiaisResult.rows.map(async (f) => ({
+        ...f,
+        dispositivos: dispositivosPorFilial.get(f.id) ?? [],
+        identificacao: await buscarIdentificacaoFilial(cliente.id, f.id),
+      }))
+    );
 
     return new Response(
       JSON.stringify({

@@ -381,6 +381,13 @@
   color: #888;
 }
 
+.clients-licenca-identificacao {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #3956e8;
+}
+
 .clients-dispositivos {
   display: flex;
   flex-direction: column;

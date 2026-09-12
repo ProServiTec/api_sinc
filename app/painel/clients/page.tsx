@@ -198,9 +198,21 @@ function NovoClienteModal({
   const [nome, setNome] = useState("");
   const [razaoSocial, setRazaoSocial] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
-  const [senha, setSenha] = useState("");
+  const [limiteUsuarios, setLimiteUsuarios] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [credencial, setCredencial] = useState<{ cpfCnpj: string; senha: string } | null>(null);
+  const [senhaCopiada, setSenhaCopiada] = useState(false);
+
+  async function copiarSenha(senha: string) {
+    try {
+      await navigator.clipboard.writeText(senha);
+      setSenhaCopiada(true);
+      setTimeout(() => setSenhaCopiada(false), 2000);
+    } catch {
+      // Clipboard indisponível (ex.: contexto não seguro) — ignora silenciosamente.
+    }
+  }
 
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -211,7 +223,13 @@ function NovoClienteModal({
       const response = await fetch("/api/empresas", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, razao_social: razaoSocial, cpf_cnpj: cpfCnpj, senha, revenda_id: revendaId }),
+        body: JSON.stringify({
+          nome,
+          razao_social: razaoSocial,
+          cpf_cnpj: cpfCnpj,
+          revenda_id: revendaId,
+          limite_usuarios: limiteUsuarios.trim() === "" ? null : Number(limiteUsuarios),
+        }),
       });
 
       const data = await response.json();
@@ -221,12 +239,56 @@ function NovoClienteModal({
         return;
       }
 
-      onCriado();
+      // Mostra a credencial do Usuário Master uma única vez — ela não pode
+      // ser recuperada depois (o banco só guarda o hash).
+      setCredencial({ cpfCnpj, senha: data.senha_master as string });
     } catch {
       setError("Não foi possível conectar ao servidor");
     } finally {
       setLoading(false);
     }
+  }
+
+  if (credencial) {
+    return (
+      <div className="clients-modal-backdrop">
+        <div className="clients-modal-card">
+          <div className="clients-modal-header">
+            <h2>Cliente cadastrado!</h2>
+          </div>
+
+          <p>
+            Repasse esta credencial de <strong>Usuário Master</strong> ao cliente. Ela só é exibida
+            agora — se for perdida, será preciso gerar uma nova senha.
+          </p>
+
+          <label className="clients-field">
+            CPF/CNPJ
+            <input type="text" value={credencial.cpfCnpj} readOnly />
+          </label>
+
+          <label className="clients-field">
+            Senha
+            <div style={{ display: "flex", gap: 8 }}>
+              <input type="text" value={credencial.senha} readOnly style={{ flex: 1 }} />
+              <button type="button" onClick={() => copiarSenha(credencial.senha)}>
+                {senhaCopiada ? "Copiado!" : "Copiar"}
+              </button>
+            </div>
+          </label>
+
+          <button
+            type="button"
+            className="clients-cadastrar-btn"
+            onClick={() => {
+              onCriado();
+            }}
+          >
+            Concluir
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -259,17 +321,19 @@ function NovoClienteModal({
         </label>
 
         <label className="clients-field">
-          Senha
+          Limite de subusuários (opcional)
           <input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            placeholder="Mínimo de 6 caracteres"
-            autoComplete="new-password"
-            minLength={6}
-            required
+            type="number"
+            min={0}
+            value={limiteUsuarios}
+            onChange={(e) => setLimiteUsuarios(e.target.value)}
+            placeholder="Sem limite"
           />
         </label>
+
+        <p className="clients-field-hint">
+          A senha do Usuário Master é gerada automaticamente e exibida no próximo passo.
+        </p>
 
         {error && <p className="clients-error">{error}</p>}
 

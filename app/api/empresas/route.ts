@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
-import { hashPassword } from "@/lib/password";
+import { gerarSenhaTemporaria, hashPassword } from "@/lib/password";
 import { onlyDigits } from "@/lib/cpfCnpj";
 
 export async function POST(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { nome, razao_social, cpf_cnpj, senha, revenda_id } = (body ?? {}) as Record<string, unknown>;
+  const { nome, razao_social, cpf_cnpj, revenda_id, limite_usuarios } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof nome !== "string" || nome.trim() === "") {
@@ -28,12 +28,21 @@ export async function POST(request: NextRequest) {
     if (typeof cpf_cnpj !== "string" || onlyDigits(cpf_cnpj) === "") {
       throw new SyncValidationError("cpf_cnpj é obrigatório");
     }
-    if (typeof senha !== "string" || senha.length < 6) {
-      throw new SyncValidationError("senha é obrigatória e deve ter ao menos 6 caracteres");
-    }
     if (revenda_id !== undefined && revenda_id !== null && typeof revenda_id !== "string") {
       throw new SyncValidationError("revenda_id inválido");
     }
+    if (
+      limite_usuarios !== undefined &&
+      limite_usuarios !== null &&
+      (typeof limite_usuarios !== "number" || !Number.isInteger(limite_usuarios) || limite_usuarios < 0)
+    ) {
+      throw new SyncValidationError("limite_usuarios deve ser um número inteiro maior ou igual a 0");
+    }
+
+    // Credencial do Usuário Master é sempre gerada aqui — o Parceiro nunca digita
+    // a senha do cliente. Mostrada em texto puro só nesta resposta; o Master
+    // pode mantê-la ou trocar no primeiro login (empresas.senha_temporaria).
+    const senha = gerarSenhaTemporaria();
 
     // Cadastro feito pelo painel de uma revenda: o cliente fica vinculado a ela.
     // Cadastro feito pelo painel Master (sem revenda_id): cliente fica sem dono.
@@ -49,15 +58,18 @@ export async function POST(request: NextRequest) {
 
     const senhaHash = await hashPassword(senha);
     const revendaIdValor = typeof revenda_id === "string" && revenda_id.trim() !== "" ? revenda_id : null;
+    const limiteUsuariosValor = typeof limite_usuarios === "number" ? limite_usuarios : null;
 
     const { rows } = await pool.query(
-      `INSERT INTO core.empresas (nome, razao_social, cpf_cnpj, password, revenda_id)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, nome, razao_social, cpf_cnpj, ativo, created_at, updated_at`,
-      [nome.trim(), razao_social.trim(), onlyDigits(cpf_cnpj), senhaHash, revendaIdValor]
+      `INSERT INTO core.empresas (nome, razao_social, cpf_cnpj, password, revenda_id, senha_temporaria, limite_usuarios)
+       VALUES ($1, $2, $3, $4, $5, true, $6)
+       RETURNING id, nome, razao_social, cpf_cnpj, ativo, limite_usuarios, created_at, updated_at`,
+      [nome.trim(), razao_social.trim(), onlyDigits(cpf_cnpj), senhaHash, revendaIdValor, limiteUsuariosValor]
     );
 
-    return new Response(JSON.stringify({ empresa: rows[0] }), {
+    // A senha em texto puro só existe aqui — o banco guarda só o hash. Copie
+    // agora e repasse ao cliente; ele poderá mantê-la ou trocá-la no primeiro login.
+    return new Response(JSON.stringify({ empresa: rows[0], senha_master: senha }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
     });

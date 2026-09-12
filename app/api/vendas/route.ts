@@ -23,6 +23,7 @@ function subDias(date: Date, dias: number): Date {
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
   const empresaId = params.get("empresa_id");
+  const filialId = params.get("filial_id") || null;
   const periodo = params.get("periodo") ?? "caixa_atual";
   const dispositivo = params.get("dispositivo") || null;
   const deParam = params.get("de");
@@ -53,9 +54,10 @@ export async function GET(request: NextRequest) {
                 WHERE v._zaya_empresa_id = fc._zaya_empresa_id AND v.id_dispositivo = fc.id_dispositivo) AS codigo_dispositivo
        FROM pdv.fechamento_caixa fc
        WHERE fc._zaya_empresa_id = $1
+         AND ($2::uuid IS NULL OR fc._zaya_filial_id = $2)
          AND fc.data_fechamento IS NULL
        ORDER BY fc.data_abertura ASC`,
-      [empresaId]
+      [empresaId, filialId]
     );
 
     const agora = new Date();
@@ -78,14 +80,14 @@ export async function GET(request: NextRequest) {
     }
 
     const bucket = periodo === "1a" ? "month" : "day";
-    const filtro = `AND ($4::text IS NULL OR v.id_dispositivo = $4)`;
-    const p = [empresaId, naive(de), naive(ate), dispositivo];
+    const filtro = `AND ($4::text IS NULL OR v.id_dispositivo = $4) AND ($5::uuid IS NULL OR v._zaya_filial_id = $5)`;
+    const p = [empresaId, naive(de), naive(ate), dispositivo, filialId];
 
     // Janela anterior de mesma duração, usada para calcular o crescimento percentual.
     const duracaoMs = ate.getTime() - de.getTime();
     const ateAnterior = new Date(de.getTime() - 1);
     const deAnterior = new Date(ateAnterior.getTime() - duracaoMs);
-    const pAnterior = [empresaId, naive(deAnterior), naive(ateAnterior), dispositivo];
+    const pAnterior = [empresaId, naive(deAnterior), naive(ateAnterior), dispositivo, filialId];
 
     const [
       resumoResult,
@@ -137,7 +139,7 @@ export async function GET(request: NextRequest) {
           p
         ),
         pool.query(
-          `SELECT to_char(date_trunc($5, v.data_hora_criado::timestamp), 'YYYY-MM-DD') AS dia,
+          `SELECT to_char(date_trunc($6, v.data_hora_criado::timestamp), 'YYYY-MM-DD') AS dia,
                   count(*)::int AS vendas,
                   COALESCE(SUM(v.valor_total_liquido), 0) AS total
            FROM pdv.venda v
@@ -154,17 +156,19 @@ export async function GET(request: NextRequest) {
           `SELECT id_dispositivo, MAX(codigo_dispositivo) AS codigo_dispositivo
            FROM pdv.venda
            WHERE _zaya_empresa_id = $1
+             AND ($2::uuid IS NULL OR _zaya_filial_id = $2)
            GROUP BY id_dispositivo
            ORDER BY 1`,
-          [empresaId]
+          [empresaId, filialId]
         ),
         pool.query(
           `SELECT codigo_dispositivo, _zaya_synced_at
            FROM pdv.venda
            WHERE _zaya_empresa_id = $1
+             AND ($2::uuid IS NULL OR _zaya_filial_id = $2)
            ORDER BY _zaya_synced_at DESC
            LIMIT 1`,
-          [empresaId]
+          [empresaId, filialId]
         ),
         pool.query(
           `SELECT count(*)::int AS total_vendas, COALESCE(SUM(v.valor_total_liquido), 0) AS receita_total

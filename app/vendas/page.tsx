@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart, DonutChart, LineChart } from "./Charts";
 import "./vendas.css";
@@ -11,6 +11,28 @@ interface EmpresaSessao {
   cpf_cnpj: string | null;
   is_admin: boolean;
   is_master: boolean;
+}
+
+interface FilialInfo {
+  id: string;
+  nome: string;
+  ativo: boolean;
+  ja_sincronizou: boolean;
+  ultima_sincronizacao: string | null;
+  identificacao: { razao_social: string | null; nome_fantasia: string | null; cpf_cnpj: string | null } | null;
+}
+
+interface SubUsuarioSessao {
+  id: string;
+  nome: string;
+  acesso_total: boolean;
+  filiais: string[];
+  permissoes: {
+    ver_dashboards: boolean;
+    ver_relatorios: boolean;
+    lancar_financeiro: boolean;
+    editar_excluir: boolean;
+  };
 }
 
 interface CaixaAberto {
@@ -91,6 +113,253 @@ const NAV_ITEMS = [
   { label: "Etiquetas", active: false },
 ];
 
+interface Filial {
+  id: string;
+  nome: string;
+  ativo: boolean;
+}
+
+interface SubUsuario {
+  id: string;
+  nome: string;
+  acesso_total: boolean;
+  pode_ver_dashboards: boolean;
+  pode_ver_relatorios: boolean;
+  pode_lancar_financeiro: boolean;
+  pode_editar_excluir: boolean;
+  ativo: boolean;
+  filiais: { filial_id: string; filial_nome: string }[];
+}
+
+function UsuariosPanel({ empresaId }: { empresaId: string }) {
+  const [usuarios, setUsuarios] = useState<SubUsuario[]>([]);
+  const [filiais, setFiliais] = useState<Filial[]>([]);
+  const [limite, setLimite] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const [senhaGerada, setSenhaGerada] = useState<{ nome: string; senha: string } | null>(null);
+  const [senhaCopiada, setSenhaCopiada] = useState(false);
+
+  async function copiarSenha(senha: string) {
+    try {
+      await navigator.clipboard.writeText(senha);
+      setSenhaCopiada(true);
+      setTimeout(() => setSenhaCopiada(false), 2000);
+    } catch {
+      // Clipboard indisponível (ex.: contexto não seguro) — ignora silenciosamente.
+    }
+  }
+
+  const [nome, setNome] = useState("");
+  const [acessoTotal, setAcessoTotal] = useState(true);
+  const [filiaisSelecionadas, setFiliaisSelecionadas] = useState<string[]>([]);
+  const [permissoes, setPermissoes] = useState({
+    pode_ver_dashboards: true,
+    pode_ver_relatorios: true,
+    pode_lancar_financeiro: false,
+    pode_editar_excluir: false,
+  });
+  const [salvando, setSalvando] = useState(false);
+
+  const carregar = useCallback(async () => {
+    setLoading(true);
+    setErro(null);
+    try {
+      const [resUsuarios, resFiliais] = await Promise.all([
+        fetch(`/api/vendas/usuarios?empresa_id=${empresaId}`),
+        fetch(`/api/vendas/filiais?empresa_id=${empresaId}`),
+      ]);
+      const dataUsuarios = await resUsuarios.json();
+      const dataFiliais = await resFiliais.json();
+      if (!resUsuarios.ok) throw new Error(dataUsuarios.error ?? "Não foi possível carregar os usuários");
+      if (!resFiliais.ok) throw new Error(dataFiliais.error ?? "Não foi possível carregar as filiais");
+      setUsuarios(dataUsuarios.usuarios);
+      setLimite(dataUsuarios.limite_usuarios);
+      setFiliais(dataFiliais.filiais);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao carregar dados");
+    } finally {
+      setLoading(false);
+    }
+  }, [empresaId]);
+
+  useEffect(() => {
+    carregar();
+  }, [carregar]);
+
+  async function criarUsuario(event: FormEvent) {
+    event.preventDefault();
+    setSalvando(true);
+    setErro(null);
+    try {
+      const response = await fetch("/api/vendas/usuarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresa_id: empresaId,
+          nome,
+          acesso_total: acessoTotal,
+          filiais: acessoTotal ? [] : filiaisSelecionadas,
+          ...permissoes,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Não foi possível criar o usuário");
+
+      setSenhaGerada({ nome, senha: data.senha });
+      setNome("");
+      setAcessoTotal(true);
+      setFiliaisSelecionadas([]);
+      await carregar();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Erro ao criar usuário");
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function alternarAtivo(usuario: SubUsuario) {
+    if (usuario.ativo) {
+      await fetch(`/api/vendas/usuarios/${usuario.id}?empresa_id=${empresaId}`, { method: "DELETE" });
+    } else {
+      await fetch(`/api/vendas/usuarios/${usuario.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ empresa_id: empresaId, ativo: true }),
+      });
+    }
+    await carregar();
+  }
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 16 }}>
+      <h2 style={{ margin: 0 }}>Usuários</h2>
+      <p style={{ margin: 0, color: "var(--cor-texto-suave, #666)" }}>
+        {limite !== null ? `${usuarios.filter((u) => u.ativo).length} de ${limite} usuário(s) usado(s)` : "Sem limite de usuários"}
+      </p>
+
+      {erro && <p className="vendas-erro">{erro}</p>}
+
+      {senhaGerada && (
+        <div className="vendas-caixas" style={{ flexDirection: "column", alignItems: "flex-start" }}>
+          <strong>Usuário &quot;{senhaGerada.nome}&quot; criado!</strong>
+          <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            Senha (mostrada uma única vez): <code>{senhaGerada.senha}</code>
+            <button type="button" onClick={() => copiarSenha(senhaGerada.senha)}>
+              {senhaCopiada ? "Copiado!" : "Copiar"}
+            </button>
+          </p>
+          <button type="button" onClick={() => setSenhaGerada(null)}>Fechar</button>
+        </div>
+      )}
+
+      <form onSubmit={criarUsuario} style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
+        <label>
+          Nome
+          <input type="text" value={nome} onChange={(e) => setNome(e.target.value)} required />
+        </label>
+
+        <label>
+          <input type="checkbox" checked={acessoTotal} onChange={(e) => setAcessoTotal(e.target.checked)} />
+          {" "}Acesso total (todas as filiais, atuais e futuras)
+        </label>
+
+        {!acessoTotal && (
+          <fieldset>
+            <legend>Filiais permitidas</legend>
+            {filiais.map((f) => (
+              <label key={f.id} style={{ display: "block" }}>
+                <input
+                  type="checkbox"
+                  checked={filiaisSelecionadas.includes(f.id)}
+                  onChange={(e) =>
+                    setFiliaisSelecionadas((atual) =>
+                      e.target.checked ? [...atual, f.id] : atual.filter((id) => id !== f.id)
+                    )
+                  }
+                />{" "}
+                {f.nome}
+              </label>
+            ))}
+            {filiais.length === 0 && <p>Nenhuma filial cadastrada ainda.</p>}
+          </fieldset>
+        )}
+
+        <fieldset>
+          <legend>Permissões</legend>
+          <label style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={permissoes.pode_ver_dashboards}
+              onChange={(e) => setPermissoes({ ...permissoes, pode_ver_dashboards: e.target.checked })}
+            />{" "}Ver dashboards
+          </label>
+          <label style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={permissoes.pode_ver_relatorios}
+              onChange={(e) => setPermissoes({ ...permissoes, pode_ver_relatorios: e.target.checked })}
+            />{" "}Ver relatórios
+          </label>
+          <label style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={permissoes.pode_lancar_financeiro}
+              onChange={(e) => setPermissoes({ ...permissoes, pode_lancar_financeiro: e.target.checked })}
+            />{" "}Lançar financeiro
+          </label>
+          <label style={{ display: "block" }}>
+            <input
+              type="checkbox"
+              checked={permissoes.pode_editar_excluir}
+              onChange={(e) => setPermissoes({ ...permissoes, pode_editar_excluir: e.target.checked })}
+            />{" "}Editar/excluir lançamentos
+          </label>
+        </fieldset>
+
+        <button type="submit" disabled={salvando}>
+          {salvando ? "Criando..." : "Criar usuário"}
+        </button>
+      </form>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Acesso</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={4}>Carregando...</td>
+            </tr>
+          )}
+          {!loading && usuarios.length === 0 && (
+            <tr>
+              <td colSpan={4}>Nenhum usuário cadastrado ainda.</td>
+            </tr>
+          )}
+          {usuarios.map((u) => (
+            <tr key={u.id}>
+              <td>{u.nome}</td>
+              <td>{u.acesso_total ? "Todas as filiais" : u.filiais.map((f) => f.filial_nome).join(", ") || "Nenhuma"}</td>
+              <td>{u.ativo ? "Ativo" : "Desativado"}</td>
+              <td>
+                <button type="button" onClick={() => alternarAtivo(u)}>
+                  {u.ativo ? "Desativar" : "Reativar"}
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -127,10 +396,15 @@ export default function Vendas() {
   // navegador, então é lido depois de montar, nunca no render inicial (evita
   // hydration mismatch).
   const [empresa, setEmpresa] = useState<EmpresaSessao | null>(null);
+  const [usuario, setUsuario] = useState<SubUsuarioSessao | null>(null);
+  const [aba, setAba] = useState<"dashboard" | "usuarios">("dashboard");
   const [filtros, setFiltros] = useState<Filtros>({ periodo: "caixa_atual", dispositivo: "", de: "", ate: "" });
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filiais, setFiliais] = useState<FilialInfo[]>([]);
+  const [filiaisProntas, setFiliaisProntas] = useState(false);
+  const [filialAtiva, setFilialAtiva] = useState<string | null>(null);
   const [graficosVisiveis, setGraficosVisiveis] = useState<GraficoId[]>([
     "dia",
     "acumulada",
@@ -148,11 +422,12 @@ export default function Vendas() {
     });
   }
 
-  const carregar = useCallback(async (empresaId: string, f: Filtros) => {
+  const carregar = useCallback(async (empresaId: string, f: Filtros, filialId: string | null) => {
     setLoading(true);
     setError(null);
 
     const qs = new URLSearchParams({ empresa_id: empresaId, periodo: f.periodo });
+    if (filialId) qs.set("filial_id", filialId);
     if (f.dispositivo) qs.set("dispositivo", f.dispositivo);
     if (f.periodo === "custom" && f.de && f.ate) {
       qs.set("de", f.de);
@@ -166,9 +441,6 @@ export default function Vendas() {
         throw new Error(data.error ?? "Não foi possível carregar os dados de vendas");
       }
       setResumo(data as Resumo);
-      // Debug rápido: confirma se essa empresa já tem algum sincronizador
-      // conectado (já mandou dados alguma vez) ou não.
-      console.log("Sincronizador conectado:", Boolean((data as Resumo).ultima_sincronizacao));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os dados de vendas");
     } finally {
@@ -176,12 +448,36 @@ export default function Vendas() {
     }
   }, []);
 
+  // Filiais que este login pode ver: Master e subusuário com acesso_total veem
+  // todas; um subusuário restrito só vê as que foram liberadas pra ele.
+  const filiaisVisiveis =
+    usuario && !usuario.acesso_total ? filiais.filter((f) => usuario.filiais.includes(f.id)) : filiais;
+  const permiteVisaoAgregada = !usuario || usuario.acesso_total;
+
+  const carregarFiliais = useCallback(async (empresaId: string) => {
+    try {
+      const response = await fetch(`/api/vendas/filiais?empresa_id=${empresaId}`);
+      const data = await response.json();
+      if (response.ok) setFiliais(data.filiais as FilialInfo[]);
+    } finally {
+      setFiliaisProntas(true);
+    }
+  }, []);
+
+  function selecionarFilial(filialId: string | null) {
+    if (!empresa) return;
+    setFilialAtiva(filialId);
+    carregar(empresa.id, filtros, filialId);
+  }
+
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
     Promise.resolve().then(() => {
       const raw = sessionStorage.getItem("empresa");
       setEmpresa(raw ? (JSON.parse(raw) as EmpresaSessao) : null);
+      const rawUsuario = sessionStorage.getItem("usuario");
+      setUsuario(rawUsuario ? (JSON.parse(rawUsuario) as SubUsuarioSessao) : null);
       setPronto(true);
     });
   }, []);
@@ -202,26 +498,39 @@ export default function Vendas() {
       return;
     }
 
-    // Adia para o próximo microtask: carregar() atualiza estado logo na primeira
-    // linha, e chamá-la sincronamente aqui dispararia um set-state-in-effect.
+    // Adia para o próximo microtask: setState atualiza logo na primeira linha,
+    // e chamar sincronamente aqui dispararia um set-state-in-effect.
     Promise.resolve().then(() => {
-      carregar(empresa.id, { periodo: "caixa_atual", dispositivo: "", de: "", ate: "" });
+      carregarFiliais(empresa.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pronto, empresa, router]);
+
+  // Assim que a lista de filiais chega, escolhe a padrão: "Todas" (agregado)
+  // se houver mais de uma e o login tiver visão agregada liberada, senão a
+  // primeira (e única) filial visível.
+  useEffect(() => {
+    if (!filiaisProntas || !empresa) return;
+    if (filiaisVisiveis.length === 0) return; // empty state — nada pra carregar
+
+    const padrao = permiteVisaoAgregada && filiaisVisiveis.length > 1 ? null : filiaisVisiveis[0].id;
+    setFilialAtiva(padrao);
+    carregar(empresa.id, filtros, padrao);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filiaisProntas, empresa]);
 
   function aplicarPreset(periodo: Filtros["periodo"]) {
     if (!empresa) return;
     const novo = { ...filtros, periodo };
     setFiltros(novo);
-    carregar(empresa.id, novo);
+    carregar(empresa.id, novo, filialAtiva);
   }
 
   function aplicarDispositivo(dispositivo: string) {
     if (!empresa) return;
     const novo = { ...filtros, dispositivo };
     setFiltros(novo);
-    carregar(empresa.id, novo);
+    carregar(empresa.id, novo, filialAtiva);
   }
 
   function atualizar() {
@@ -229,11 +538,12 @@ export default function Vendas() {
     const usarCustom = filtros.de && filtros.ate;
     const novo: Filtros = usarCustom ? { ...filtros, periodo: "custom" } : filtros;
     setFiltros(novo);
-    carregar(empresa.id, novo);
+    carregar(empresa.id, novo, filialAtiva);
   }
 
   function sair() {
     sessionStorage.removeItem("empresa");
+    sessionStorage.removeItem("usuario");
     router.push("/login");
   }
 
@@ -259,10 +569,24 @@ export default function Vendas() {
 
         <nav className="vendas-nav">
           {NAV_ITEMS.map((item) => (
-            <span key={item.label} className={`vendas-nav-item${item.active ? " vendas-nav-item-active" : ""}`}>
+            <span
+              key={item.label}
+              className={`vendas-nav-item${item.active && aba === "dashboard" ? " vendas-nav-item-active" : ""}`}
+              onClick={() => setAba("dashboard")}
+              style={{ cursor: "pointer" }}
+            >
               {item.label}
             </span>
           ))}
+          {!usuario && (
+            <span
+              className={`vendas-nav-item${aba === "usuarios" ? " vendas-nav-item-active" : ""}`}
+              onClick={() => setAba("usuarios")}
+              style={{ cursor: "pointer" }}
+            >
+              Usuários
+            </span>
+          )}
         </nav>
 
         {empresa && (
@@ -277,6 +601,58 @@ export default function Vendas() {
       </header>
 
       <main className="vendas-main">
+        {aba === "usuarios" && empresa ? (
+          <UsuariosPanel empresaId={empresa.id} />
+        ) : !filiaisProntas ? (
+          <section className="vendas-filtros">
+            <p>Carregando...</p>
+          </section>
+        ) : filiaisVisiveis.length === 0 ? (
+          <section className="vendas-empty-state">
+            <h2>Nenhuma empresa ativa</h2>
+            <p>
+              Assim que o sincronizador conectar e ativar o banco de dados de uma filial, os dados
+              aparecem aqui automaticamente.
+            </p>
+          </section>
+        ) : (
+        <>
+        {filiaisVisiveis.length > 1 && (
+          <nav className="vendas-filial-tabs">
+            {permiteVisaoAgregada && (
+              <button
+                className={`vendas-filial-tab${filialAtiva === null ? " vendas-filial-tab-ativa" : ""}`}
+                onClick={() => selecionarFilial(null)}
+              >
+                Todas
+              </button>
+            )}
+            {filiaisVisiveis.map((f) => (
+              <button
+                key={f.id}
+                className={`vendas-filial-tab${filialAtiva === f.id ? " vendas-filial-tab-ativa" : ""}`}
+                onClick={() => selecionarFilial(f.id)}
+              >
+                {f.nome}
+              </button>
+            ))}
+          </nav>
+        )}
+
+        {filialAtiva && (
+          (() => {
+            const filialSelecionada = filiaisVisiveis.find((f) => f.id === filialAtiva);
+            const id = filialSelecionada?.identificacao;
+            return (
+              <p className="vendas-filial-identificacao">
+                {id
+                  ? [id.razao_social, id.nome_fantasia, id.cpf_cnpj].filter(Boolean).join(" · ")
+                  : "Aguardando o sincronizador enviar os dados da empresa..."}
+              </p>
+            );
+          })()
+        )}
+
         <section className="vendas-filtros">
           <span className="vendas-filtros-label">Período:</span>
           {PRESETS.map((p) => (
@@ -448,6 +824,8 @@ export default function Vendas() {
               )}
             </section>
           </>
+        )}
+        </>
         )}
       </main>
     </div>

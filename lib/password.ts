@@ -10,6 +10,22 @@ export async function hashPassword(senha: string): Promise<string> {
   return `${salt}:${derived.toString("hex")}`;
 }
 
+// Mesmo alfabeto sem caracteres ambíguos usado pelo código de licença
+// (core.novo_codigo_licenca), pra manter consistência visual entre os dois.
+const ALFABETO_SENHA = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+/** Gera uma senha temporária legível (10 caracteres), usada quando o Parceiro
+ * cria um Cliente novo: mostrada em texto puro uma única vez na resposta,
+ * pro Master trocar (ou manter) no primeiro login. */
+export function gerarSenhaTemporaria(): string {
+  const bytes = randomBytes(10);
+  let senha = "";
+  for (let i = 0; i < bytes.length; i++) {
+    senha += ALFABETO_SENHA[bytes[i] % ALFABETO_SENHA.length];
+  }
+  return senha;
+}
+
 export async function verifyPassword(senha: string, hash: string): Promise<boolean> {
   const [salt, key] = hash.split(":");
   if (!salt || !key) return false;
