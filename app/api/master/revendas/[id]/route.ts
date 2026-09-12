@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     }
 
     const { rows: licencas } = await pool.query(
-      `SELECT la.id, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
+      `SELECT la.id, la.codigo, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
               la.empresa_id, e.nome AS empresa_nome, la.ativo, la.created_at,
               (${STATUS_LICENCA_SQL}) AS status
        FROM core.licencas_atribuidas la

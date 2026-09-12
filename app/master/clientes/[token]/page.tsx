@@ -35,6 +35,7 @@ interface Detalhe {
   };
   licencas_ativas: number;
   maquinas: number;
+  ultima_sincronizacao: string | null;
   licencas: Licenca[];
 }
 
@@ -97,6 +98,12 @@ export default function DetalheEmpresaMaster() {
             <div className="painel-card">
               <span className="painel-card-label">Cadastrado em</span>
               <strong className="painel-card-value">{formatarData(detalhe.cliente.created_at)}</strong>
+            </div>
+            <div className="painel-card">
+              <span className="painel-card-label">Última sincronização</span>
+              <strong className="painel-card-value">
+                {detalhe.ultima_sincronizacao ? formatarDataHora(detalhe.ultima_sincronizacao) : "Nunca sincronizou"}
+              </strong>
             </div>
           </section>
 

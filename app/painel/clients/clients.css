@@ -1,3 +1,9 @@
+.licencas-codigo {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 0.85em;
+  letter-spacing: 0.02em;
+}
+
 .clients-header {
   display: flex;
   align-items: flex-start;
@@ -204,6 +210,38 @@
 }
 
 /* Página de detalhes do cliente */
+
+.clients-atualizar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin: 0.25rem 0 1.5rem;
+}
+
+.clients-atualizar-btn {
+  padding: 0.6rem 1.1rem;
+  border: 1px solid var(--brand);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.clients-atualizar-btn:hover:not(:disabled) {
+  background: #eef1ff;
+}
+
+.clients-atualizar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.clients-atualizar-mensagem {
+  color: #555;
+  font-size: 0.85rem;
+}
 
 .clients-voltar {
   display: inline-block;

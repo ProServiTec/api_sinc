@@ -166,6 +166,9 @@ export default function Vendas() {
         throw new Error(data.error ?? "Não foi possível carregar os dados de vendas");
       }
       setResumo(data as Resumo);
+      // Debug rápido: confirma se essa empresa já tem algum sincronizador
+      // conectado (já mandou dados alguma vez) ou não.
+      console.log("Sincronizador conectado:", Boolean((data as Resumo).ultima_sincronizacao));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Não foi possível carregar os dados de vendas");
     } finally {
@@ -319,6 +322,12 @@ export default function Vendas() {
           <button className="vendas-atualizar" onClick={atualizar} disabled={loading}>
             {loading ? "Atualizando..." : "Atualizar"}
           </button>
+
+          {resumo?.ultima_sincronizacao && (
+            <span className="vendas-ultima-sync-chip">
+              Última atualização: <strong>{formatarRelativo(resumo.ultima_sincronizacao.quando)}</strong>
+            </span>
+          )}
         </section>
 
         {error && <p className="vendas-erro">{error}</p>}
@@ -334,12 +343,6 @@ export default function Vendas() {
                 </span>
               ))}
             </div>
-            {resumo.ultima_sincronizacao && (
-              <span className="vendas-ultima-sync">
-                Última atualização: <strong>{resumo.ultima_sincronizacao.label}</strong> ·{" "}
-                {formatarRelativo(resumo.ultima_sincronizacao.quando)}
-              </span>
-            )}
           </section>
         )}
 

@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const cliente = clienteRows[0];
 
-    const [filiaisResult, dispositivosResult, licencasPlanoResult] = await Promise.all([
+    const [filiaisResult, dispositivosResult, licencasPlanoResult, syncStatusResult] = await Promise.all([
       pool.query(
         `SELECT id, nome, cpf_cnpj, cidade, uf, ativo, created_at
          FROM core.filiais
@@ -50,12 +50,18 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         [cliente.id]
       ),
       pool.query(
-        `SELECT la.id, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
+        `SELECT la.id, la.codigo, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
                 la.ativo, la.created_at
          FROM core.licencas_atribuidas la
          JOIN core.licencas l ON l.id = la.licenca_id
          WHERE la.empresa_id = $1
          ORDER BY la.created_at DESC`,
+        [cliente.id]
+      ),
+      pool.query(
+        `SELECT MAX(ultima_sincronizacao) AS ultima
+         FROM core.sync_status
+         WHERE empresa_id = $1`,
         [cliente.id]
       ),
     ]);
@@ -78,6 +84,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         cliente,
         licencas_ativas: licencas.filter((l) => l.ativo).length,
         maquinas: dispositivosResult.rows.length,
+        ultima_sincronizacao: syncStatusResult.rows[0]?.ultima ?? null,
         licencas,
         licencas_plano: licencasPlanoResult.rows,
       }),

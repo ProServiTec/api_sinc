@@ -8,6 +8,7 @@ import "../../master.css";
 
 interface LicencaRevenda {
   id: string;
+  codigo: string;
   licenca_id: string;
   licenca_nome: string;
   valor: string;
@@ -182,6 +183,7 @@ export default function DetalheRevenda() {
                 <table className="clients-tabela">
                   <thead>
                     <tr>
+                      <th>Código</th>
                       <th>Licença</th>
                       <th>Valor</th>
                       <th>Periodicidade</th>
@@ -194,6 +196,9 @@ export default function DetalheRevenda() {
                   <tbody>
                     {detalhe.licencas.map((l) => (
                       <tr key={l.id}>
+                        <td>
+                          <code className="licencas-codigo">{l.codigo}</code>
+                        </td>
                         <td>
                           <strong>{l.licenca_nome}</strong>
                         </td>

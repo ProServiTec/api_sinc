@@ -232,10 +232,17 @@
   color: #333;
 }
 
-.vendas-ultima-sync {
-  margin-left: auto;
-  font-size: 0.78rem;
-  color: #777;
+.vendas-ultima-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  background: #fff;
+  border: 1px solid rgba(57, 86, 232, 0.18);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  color: #555;
+  white-space: nowrap;
 }
 
 /* Stat cards */

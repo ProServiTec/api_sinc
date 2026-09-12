@@ -5,6 +5,17 @@ export class SyncValidationError extends Error {
   }
 }
 
+/** Uma filial só pode sincronizar dados de UM banco de dados (PDV+) de origem.
+ * Lançado quando um lote chega com _zaya_source_database diferente do já
+ * gravado para essa filial (ex.: alguém tentando usar o código/token de uma
+ * licença para sincronizar um PDV+ diferente do que a ativou). */
+export class SyncBancoDivergenteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SyncBancoDivergenteError";
+  }
+}
+
 interface PgLikeError {
   code?: string;
   message?: string;
@@ -21,7 +32,8 @@ export interface ClassifiedError {
     | "conflito_banco"
     | "conexao_banco"
     | "erro_banco"
-    | "erro_interno";
+    | "erro_interno"
+    | "banco_divergente";
   error: string;
   codigo_postgres?: string;
   detalhe_postgres?: string;
@@ -39,6 +51,10 @@ const CONNECTION_ERROR_CODES = new Set([
 export function classifyError(error: unknown): ClassifiedError {
   if (error instanceof SyncValidationError) {
     return { status: 400, tipo: "validacao", error: error.message };
+  }
+
+  if (error instanceof SyncBancoDivergenteError) {
+    return { status: 409, tipo: "banco_divergente", error: error.message };
   }
 
   if (error && typeof error === "object" && "code" in error) {

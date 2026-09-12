@@ -1,7 +1,72 @@
+import type { PoolClient } from "pg";
 import { pool } from "./db";
-import { SyncValidationError } from "./errors";
+import { SyncBancoDivergenteError, SyncValidationError } from "./errors";
 
 const ZERO_UUID = "00000000-0000-0000-0000-000000000000";
+
+const COLUNA_CACHE_TTL_MS = 5 * 60 * 1000;
+let colunaPdvSourceDatabaseCache: { existe: boolean; expiresAt: number } | null = null;
+
+/** Consulta information_schema (nunca falha, mesmo se a coluna não existir) em vez
+ * de tentar usar a coluna direto — evita abortar a transação de upsert por causa
+ * de uma migração que ainda não rodou nesta base. */
+async function colunaPdvSourceDatabaseExiste(): Promise<boolean> {
+  if (colunaPdvSourceDatabaseCache && colunaPdvSourceDatabaseCache.expiresAt > Date.now()) {
+    return colunaPdvSourceDatabaseCache.existe;
+  }
+
+  const { rows } = await pool.query(
+    `SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'core' AND table_name = 'filiais' AND column_name = 'pdv_source_database'`
+  );
+
+  const existe = rows.length > 0;
+  colunaPdvSourceDatabaseCache = { existe, expiresAt: Date.now() + COLUNA_CACHE_TTL_MS };
+  return existe;
+}
+
+/** Trava "1 licença = 1 banco de dados": a primeira sincronização de uma filial
+ * grava qual id_empresa do PDV+ (base_centralizada, enviado como
+ * _zaya_source_database) é dono dela. Sincronizações seguintes com um
+ * id_empresa diferente são rejeitadas — mas o MESMO id_empresa pode vir de
+ * quantos computadores forem (isso é permitido e esperado). */
+async function verificarBancoOrigem(
+  client: PoolClient,
+  filialId: string,
+  registros: Record<string, unknown>[]
+): Promise<void> {
+  const origem = registros
+    .map((r) => r["_zaya_source_database"])
+    .find((v): v is string => typeof v === "string" && v.trim() !== "");
+
+  if (!origem) return; // instalação antiga que ainda não manda esse campo
+
+  if (!(await colunaPdvSourceDatabaseExiste())) {
+    return; // migração ainda não aplicada nesta base: não trava o sync por causa disso
+  }
+
+  const { rows } = await client.query<{ pdv_source_database: string | null }>(
+    `SELECT pdv_source_database FROM core.filiais WHERE id = $1 FOR UPDATE`,
+    [filialId]
+  );
+
+  const atual = rows[0]?.pdv_source_database ?? null;
+
+  if (!atual) {
+    await client.query(`UPDATE core.filiais SET pdv_source_database = $1 WHERE id = $2`, [
+      origem,
+      filialId,
+    ]);
+    return;
+  }
+
+  if (atual !== origem) {
+    throw new SyncBancoDivergenteError(
+      "Esta licença já está vinculada a outro banco de dados do PDV+. " +
+        "Cada licença só pode sincronizar os dados de uma única instalação."
+    );
+  }
+}
 
 const TABLES_CACHE_TTL_MS = 5 * 60 * 1000;
 let tablesCache: { names: Set<string>; expiresAt: number } | null = null;
@@ -57,9 +122,15 @@ function chunk<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+export interface IdentidadeAutenticada {
+  empresaId: string;
+  filialId: string | null;
+}
+
 export async function upsertRecords(
   tabela: string,
-  registros: Record<string, unknown>[]
+  registros: Record<string, unknown>[],
+  identidade: IdentidadeAutenticada | null
 ): Promise<{ upserted: number }> {
   if (!(await isTabela(tabela))) {
     throw new SyncValidationError(`Tabela desconhecida: ${tabela}`);
@@ -77,9 +148,21 @@ export async function upsertRecords(
   }
 
   for (const registro of registros) {
-    if (!registro["_zaya_empresa_id"]) {
-      throw new SyncValidationError("_zaya_empresa_id é obrigatório em cada registro");
+    if (identidade) {
+      // Instalação já ativada por código de licença (tem token): o servidor
+      // decide de qual empresa/filial é o dado, nunca confia no payload —
+      // isso impede que uma instalação marque dados como se fossem de outra.
+      registro["_zaya_empresa_id"] = identidade.empresaId;
+      registro["_zaya_filial_id"] = identidade.filialId;
+    } else {
+      // Compat com instalações de antes do sistema de token: sem
+      // autenticação, o registro precisa trazer ele mesmo a empresa dona
+      // (mesma validação que existia antes de termos login por token).
+      if (!registro["_zaya_empresa_id"]) {
+        throw new SyncValidationError("_zaya_empresa_id é obrigatório em cada registro");
+      }
     }
+
     if (!registro[idColumn]) {
       throw new SyncValidationError(`${idColumn} é obrigatório em cada registro`);
     }
@@ -110,6 +193,10 @@ export async function upsertRecords(
   try {
     await client.query("BEGIN");
 
+    if (identidade?.filialId) {
+      await verificarBancoOrigem(client, identidade.filialId, registros);
+    }
+
     for (const batch of batches) {
       const values: unknown[] = [];
       const rowsSql = batch.map((registro) => {
@@ -138,20 +225,57 @@ export async function upsertRecords(
     client.release();
   }
 
+  await registrarSyncStatus(registros);
+
   return { upserted: registros.length };
+}
+
+/** Marca "sincronizou agora" para cada par (empresa, filial) presente no
+ * lote. Registra mesmo em instalações antigas sem token — usa o que cada
+ * registro já trouxer de _zaya_empresa_id/_zaya_filial_id. Falha aqui não
+ * derruba o sync (os dados já foram gravados com sucesso antes disso). */
+async function registrarSyncStatus(registros: Record<string, unknown>[]): Promise<void> {
+  const pares = new Map<string, { empresaId: string; filialId: string | null }>();
+  for (const registro of registros) {
+    const empresaId = registro["_zaya_empresa_id"] as string | undefined;
+    if (!empresaId) continue;
+    const filialId = (registro["_zaya_filial_id"] as string | null | undefined) ?? null;
+    pares.set(`${empresaId}:${filialId ?? ""}`, { empresaId, filialId });
+  }
+
+  if (pares.size === 0) return;
+
+  try {
+    for (const { empresaId, filialId } of pares.values()) {
+      await pool.query(
+        `INSERT INTO core.sync_status (empresa_id, filial_id, ultima_sincronizacao)
+         VALUES ($1, $2, now())
+         ON CONFLICT (empresa_id, (COALESCE(filial_id, '${ZERO_UUID}'::uuid)))
+         DO UPDATE SET ultima_sincronizacao = now()`,
+        [empresaId, filialId]
+      );
+    }
+  } catch (error) {
+    console.error("[sync] falha ao registrar sync_status:", error);
+  }
 }
 
 export async function listRecords(
   tabela: string,
-  limit: number
+  limit: number,
+  empresaId: string,
+  filialId: string | null
 ): Promise<unknown[]> {
   if (!(await isTabela(tabela))) {
     throw new SyncValidationError(`Tabela desconhecida: ${tabela}`);
   }
 
   const { rows } = await pool.query(
-    `SELECT * FROM pdv.${tabela} ORDER BY _zaya_synced_at DESC LIMIT $1`,
-    [limit]
+    `SELECT * FROM pdv.${tabela}
+     WHERE _zaya_empresa_id = $1 AND ($2::uuid IS NULL OR _zaya_filial_id = $2)
+     ORDER BY _zaya_synced_at DESC
+     LIMIT $3`,
+    [empresaId, filialId, limit]
   );
   return rows;
 }

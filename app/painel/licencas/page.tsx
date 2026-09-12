@@ -22,6 +22,7 @@ interface LicencaCatalogo {
 
 interface MinhaLicenca {
   id: string;
+  codigo: string;
   licenca_id: string;
   licenca_nome: string;
   valor: string;
@@ -118,6 +119,7 @@ export default function PainelLicencas() {
               <table className="clients-tabela">
                 <thead>
                   <tr>
+                    <th>Código</th>
                     <th>Licença</th>
                     <th>Valor</th>
                     <th>Periodicidade</th>
@@ -128,6 +130,9 @@ export default function PainelLicencas() {
                 <tbody>
                   {minhas.map((m) => (
                     <tr key={m.id}>
+                      <td>
+                        <code className="licencas-codigo">{m.codigo}</code>
+                      </td>
                       <td>
                         <strong>{m.licenca_nome}</strong>
                       </td>

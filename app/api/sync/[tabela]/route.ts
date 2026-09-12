@@ -1,6 +1,18 @@
 import { NextRequest } from "next/server";
 import { listRecords, upsertRecords } from "@/lib/syncTables";
 import { classifyError, SyncValidationError } from "@/lib/errors";
+import { autenticarApiClient } from "@/lib/apiClients";
+
+function respostaNaoAutenticado() {
+  return new Response(
+    JSON.stringify({
+      status: 401,
+      tipo: "nao_autenticado",
+      error: "Token de sincronização ausente ou inválido. Ative a licença em /api/sync/licencas/ativar.",
+    }),
+    { status: 401, headers: { "Content-Type": "application/json" } }
+  );
+}
 
 export async function GET(
   request: NextRequest,
@@ -8,11 +20,14 @@ export async function GET(
 ) {
   const { tabela } = await params;
 
+  const apiClient = await autenticarApiClient(request);
+  if (!apiClient) return respostaNaoAutenticado();
+
   const limitParam = request.nextUrl.searchParams.get("limit");
   const limit = Math.min(Math.max(Number(limitParam) || 200, 1), 1000);
 
   try {
-    const rows = await listRecords(tabela, limit);
+    const rows = await listRecords(tabela, limit, apiClient.empresaId, apiClient.filialId);
     console.log(`[sync] GET ${tabela} -> 200 (${rows.length} linhas)`);
     return new Response(JSON.stringify({ tabela, data: rows }), {
       status: 200,
@@ -33,6 +48,17 @@ export async function POST(
   { params }: { params: Promise<{ tabela: string }> }
 ) {
   const { tabela } = await params;
+
+  // Instalações de antes do sistema de token continuam mandando sync sem
+  // header nenhum: nesse caso caímos no modo de compatibilidade (o registro
+  // precisa trazer ele mesmo _zaya_empresa_id, como sempre foi). Só exigimos
+  // o token de quem já foi ativado por código de licença e por isso já tem
+  // um token pra mandar.
+  let identidade = null as Awaited<ReturnType<typeof autenticarApiClient>>;
+  if (request.headers.get("authorization")) {
+    identidade = await autenticarApiClient(request);
+    if (!identidade) return respostaNaoAutenticado();
+  }
 
   let body: unknown;
   try {
@@ -69,7 +95,11 @@ export async function POST(
   }
 
   try {
-    const result = await upsertRecords(tabela, registros as Record<string, unknown>[]);
+    const result = await upsertRecords(
+      tabela,
+      registros as Record<string, unknown>[],
+      identidade ? { empresaId: identidade.empresaId, filialId: identidade.filialId } : null
+    );
     console.log(`[sync] POST ${tabela} -> 200 (upserted: ${result.upserted})`);
     return new Response(JSON.stringify({ ok: true, tabela, ...result }), {
       status: 200,

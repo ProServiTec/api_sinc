@@ -41,7 +41,7 @@ export async function GET() {
          ORDER BY t.vencimento ASC NULLS LAST, t.created_at DESC`
       ),
       pool.query(
-        `SELECT la.id, la.revenda_id, r.nome AS revenda_nome, l.nome AS licenca_nome, l.valor, l.periodicidade,
+        `SELECT la.id, la.codigo, la.revenda_id, r.nome AS revenda_nome, l.nome AS licenca_nome, l.valor, l.periodicidade,
                 la.empresa_id, e.nome AS empresa_nome, la.ativo, la.created_at,
                 (${STATUS_LICENCA_SQL}) AS status
          FROM core.licencas_atribuidas la

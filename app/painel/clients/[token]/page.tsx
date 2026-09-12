@@ -27,6 +27,7 @@ interface Licenca {
 
 interface LicencaPlano {
   id: string;
+  codigo: string;
   licenca_id: string;
   licenca_nome: string;
   valor: string;
@@ -47,6 +48,7 @@ interface Detalhe {
   };
   licencas_ativas: number;
   maquinas: number;
+  ultima_sincronizacao: string | null;
   licencas: Licenca[];
   licencas_plano: LicencaPlano[];
 }
@@ -89,6 +91,9 @@ export default function DetalheCliente() {
   const [licencaSelecionada, setLicencaSelecionada] = useState("");
   const [adicionando, setAdicionando] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+
+  const [atualizando, setAtualizando] = useState(false);
+  const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
 
   function carregarDetalhe(revenda: string) {
     return fetch(
@@ -183,6 +188,33 @@ export default function DetalheCliente() {
     }
   }
 
+  async function handleAtualizar() {
+    if (!revendaId) return;
+    setAtualizando(true);
+    setAtualizarMensagem(null);
+
+    try {
+      const response = await fetch(`/api/painel/clientes/${encodeURIComponent(params.token)}/atualizar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revenda_id: revendaId }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível solicitar a atualização");
+      }
+
+      setAtualizarMensagem(
+        "Solicitado! O sincronizador vai atualizar os dados na próxima vez que verificar — pode levar alguns minutos."
+      );
+    } catch (err) {
+      setAtualizarMensagem(err instanceof Error ? err.message : "Não foi possível solicitar a atualização");
+    } finally {
+      setAtualizando(false);
+    }
+  }
+
   return (
     <>
       <Link href="/painel/clients" className="clients-voltar">
@@ -216,6 +248,19 @@ export default function DetalheCliente() {
               <span className="painel-card-label">Cadastrado em</span>
               <strong className="painel-card-value">{formatarData(detalhe.cliente.created_at)}</strong>
             </div>
+            <div className="painel-card">
+              <span className="painel-card-label">Última sincronização</span>
+              <strong className="painel-card-value">
+                {detalhe.ultima_sincronizacao ? formatarDataHora(detalhe.ultima_sincronizacao) : "Nunca sincronizou"}
+              </strong>
+            </div>
+          </section>
+
+          <section className="clients-atualizar">
+            <button className="clients-atualizar-btn" onClick={handleAtualizar} disabled={atualizando}>
+              {atualizando ? "Solicitando..." : "Atualizar dados agora"}
+            </button>
+            {atualizarMensagem && <p className="clients-atualizar-mensagem">{atualizarMensagem}</p>}
           </section>
 
           <section className="clients-detalhe-card">
@@ -283,6 +328,7 @@ export default function DetalheCliente() {
                       </span>
                     </div>
                     <div className="clients-licenca-meta">
+                      <code className="licencas-codigo">{l.codigo}</code>
                       <span>{formatarMoeda(l.valor)}</span>
                       <span>{l.periodicidade === "mensal" ? "Mensal" : "Anual"}</span>
                       <span>Fecha dia {l.dia_fechamento}</span>

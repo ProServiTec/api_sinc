@@ -28,6 +28,7 @@ interface Titulo {
 
 interface LicencaComprada {
   id: string;
+  codigo: string;
   revenda_id: string;
   revenda_nome: string;
   licenca_nome: string;
@@ -220,6 +221,7 @@ export default function MasterFinancas() {
                 <table className="clients-tabela">
                   <thead>
                     <tr>
+                      <th>Código</th>
                       <th>Parceiro</th>
                       <th>Licença</th>
                       <th>Valor</th>
@@ -232,6 +234,9 @@ export default function MasterFinancas() {
                   <tbody>
                     {dados.licencas_compradas.map((l) => (
                       <tr key={l.id}>
+                        <td>
+                          <code className="licencas-codigo">{l.codigo}</code>
+                        </td>
                         <td>
                           <Link href={`/master/revendas/${l.revenda_id}`} className="clients-ver-detalhes">
                             {l.revenda_nome}

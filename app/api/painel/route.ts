@@ -27,20 +27,23 @@ export async function GET(request: NextRequest) {
         pool.query(
           `SELECT count(*)::int AS total, count(*) FILTER (WHERE ativo)::int AS ativos
            FROM core.empresas
-           WHERE is_admin = false`
+           WHERE is_admin = false AND revenda_id = $1`,
+          [empresaId]
         ),
         // "Licenças" = filiais das empresas-cliente (cada licença é associada a uma filial)
         pool.query(
           `SELECT count(*)::int AS total, count(*) FILTER (WHERE f.ativo)::int AS ativas
            FROM core.filiais f
            JOIN core.empresas e ON e.id = f.empresa_id
-           WHERE e.is_admin = false`
+           WHERE e.is_admin = false AND e.revenda_id = $1`,
+          [empresaId]
         ),
         pool.query(
           `SELECT count(*)::int AS total, count(*) FILTER (WHERE d.ativo)::int AS ativos
            FROM core.dispositivos d
            JOIN core.empresas e ON e.id = d.empresa_id
-           WHERE e.is_admin = false`
+           WHERE e.is_admin = false AND e.revenda_id = $1`,
+          [empresaId]
         ),
         // Faturas: contas a pagar/receber da própria empresa administradora (não dos clientes)
         pool.query(
@@ -58,9 +61,10 @@ export async function GET(request: NextRequest) {
                   (SELECT count(*)::int FROM core.filiais f WHERE f.empresa_id = e.id) AS licencas,
                   (SELECT count(*)::int FROM core.dispositivos d WHERE d.empresa_id = e.id) AS dispositivos
            FROM core.empresas e
-           WHERE e.is_admin = false
+           WHERE e.is_admin = false AND e.revenda_id = $1
            ORDER BY e.created_at DESC
-           LIMIT 5`
+           LIMIT 5`,
+          [empresaId]
         ),
       ]);
 

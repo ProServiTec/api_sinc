@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
          ORDER BY nome`
       ),
       pool.query(
-        `SELECT la.id, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
+        `SELECT la.id, la.codigo, la.licenca_id, l.nome AS licenca_nome, l.valor, l.periodicidade, l.dia_fechamento,
                 la.empresa_id, e.nome AS empresa_nome, la.ativo, la.created_at
          FROM core.licencas_atribuidas la
          JOIN core.licencas l ON l.id = la.licenca_id
