@@ -86,11 +86,11 @@ export default function Painel() {
               <span className="painel-card-hint">{resumo.clientes.ativos} ativos</span>
             </Link>
 
-            <Link href="/painel/licencas" className="painel-card painel-card-link">
+            <div className="painel-card">
               <span className="painel-card-label">Licenças ativas</span>
               <strong className="painel-card-value painel-card-value-blue">{resumo.licencas.ativas}</strong>
               <span className="painel-card-hint">{resumo.licencas.total} no total</span>
-            </Link>
+            </div>
 
             <div className="painel-card">
               <span className="painel-card-label">Máquinas conectadas</span>

@@ -115,10 +115,10 @@ export default function PainelClientes() {
             <span className="painel-card-label">Clientes</span>
             <strong className="painel-card-value">{resumo.clientes.total}</strong>
           </div>
-          <Link href="/painel/licencas" className="painel-card painel-card-link">
+          <div className="painel-card">
             <span className="painel-card-label">Licenças ativas</span>
             <strong className="painel-card-value painel-card-value-blue">{resumo.licencas_ativas}</strong>
-          </Link>
+          </div>
           <div className="painel-card">
             <span className="painel-card-label">Máquinas conectadas</span>
             <strong className="painel-card-value">{resumo.maquinas}</strong>

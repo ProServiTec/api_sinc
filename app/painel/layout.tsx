@@ -15,7 +15,6 @@ interface EmpresaSessao {
 const NAV_ITEMS = [
   { label: "Visão Geral", href: "/painel" },
   { label: "Clientes", href: "/painel/clients" },
-  { label: "Licenças", href: "/painel/licencas" },
   { label: "Dispositivos", href: null },
   { label: "Faturas", href: "/painel/faturas" },
   { label: "Meu Perfil", href: null },
