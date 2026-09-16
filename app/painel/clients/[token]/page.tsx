@@ -1,6 +1,6 @@
 "use client";
 
-import { SubmitEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import "../clients.css";
@@ -71,14 +71,6 @@ interface Detalhe {
   titulos: Titulo[];
 }
 
-interface EstoqueItem {
-  licenca_id: string;
-  nome: string;
-  valor: string;
-  periodicidade: "mensal" | "anual";
-  disponiveis: number;
-}
-
 interface LicencaCatalogo {
   id: string;
   nome: string;
@@ -122,13 +114,10 @@ export default function DetalheCliente() {
   const [editError, setEditError] = useState<string | null>(null);
 
   const [revendaId, setRevendaId] = useState<string | null>(null);
-  const [estoque, setEstoque] = useState<EstoqueItem[]>([]);
   const [catalogo, setCatalogo] = useState<LicencaCatalogo[]>([]);
   const [licencaSelecionada, setLicencaSelecionada] = useState("");
   const [adicionando, setAdicionando] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
-  const [comprando, setComprando] = useState<LicencaCatalogo | null>(null);
-  const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
 
   const [atualizando, setAtualizando] = useState(false);
   const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
@@ -146,20 +135,6 @@ export default function DetalheCliente() {
       })
       .catch((err) => setError(err.message ?? "Não foi possível carregar o cliente"))
       .finally(() => setLoading(false));
-  }
-
-  function carregarEstoque(revenda: string) {
-    return fetch(`/api/painel/licencas/estoque?revenda_id=${encodeURIComponent(revenda)}`)
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error ?? "Não foi possível carregar o estoque de licenças");
-        }
-        setEstoque(data.estoque as EstoqueItem[]);
-      })
-      .catch(() => {
-        // Estoque é um complemento da tela; falha aqui não deve bloquear os dados do cliente.
-      });
   }
 
   function carregarCatalogo(revenda: string) {
@@ -184,13 +159,12 @@ export default function DetalheCliente() {
       }
       setRevendaId(empresa.id);
       carregarDetalhe(empresa.id);
-      carregarEstoque(empresa.id);
       carregarCatalogo(empresa.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.token]);
 
-  async function handleAdicionarLicenca() {
+  async function handleComprarLicenca() {
     if (!revendaId || !licencaSelecionada) return;
 
     setAdicionando(true);
@@ -206,12 +180,12 @@ export default function DetalheCliente() {
       const data = await response.json();
 
       if (!response.ok) {
-        setAddError(data.error ?? "Não foi possível adicionar a licença");
+        setAddError(data.error ?? "Não foi possível comprar a licença");
         return;
       }
 
       setLicencaSelecionada("");
-      await Promise.all([carregarDetalhe(revendaId), carregarEstoque(revendaId)]);
+      await carregarDetalhe(revendaId);
     } catch {
       setAddError("Não foi possível conectar ao servidor");
     } finally {
@@ -221,7 +195,7 @@ export default function DetalheCliente() {
 
   async function handleRemoverLicenca(licencaPlanoId: string) {
     if (!revendaId) return;
-    if (!confirm("Remover esta licença do cliente? Ela volta para o seu estoque.")) return;
+    if (!confirm("Remover esta licença do cliente?")) return;
 
     try {
       const response = await fetch(
@@ -232,7 +206,7 @@ export default function DetalheCliente() {
         const data = await response.json().catch(() => null);
         throw new Error(data?.error ?? "Não foi possível remover a licença");
       }
-      await Promise.all([carregarDetalhe(revendaId), carregarEstoque(revendaId)]);
+      await carregarDetalhe(revendaId);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Não foi possível remover a licença");
     }
@@ -311,6 +285,8 @@ export default function DetalheCliente() {
       setSalvandoEdicao(false);
     }
   }
+
+  const planoSelecionado = catalogo.find((c) => c.id === licencaSelecionada) ?? null;
 
   return (
     <>
@@ -422,82 +398,35 @@ export default function DetalheCliente() {
             <div className="clients-licencas-header">
               <h2>Licenças do Plano ({detalhe.licencas_plano.length})</h2>
               <div className="clients-licencas-plano-selecao">
-                {mostrarCatalogo ? (
-                  <select
-                    className="clients-licencas-plano-select"
-                    value=""
-                    onChange={(e) => {
-                      const item = catalogo.find((c) => c.id === e.target.value);
-                      if (item) {
-                        setComprando(item);
-                        setMostrarCatalogo(false);
-                      }
-                    }}
-                  >
-                    <option value="">Escolha o plano para comprar</option>
-                    {catalogo.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nome} — {formatarMoeda(c.valor)}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <select
-                    className="clients-licencas-plano-select"
-                    value={licencaSelecionada}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "__comprar__") {
-                        setLicencaSelecionada("");
-                        setMostrarCatalogo(true);
-                      } else {
-                        setLicencaSelecionada(value);
-                      }
-                    }}
-                  >
-                    <option value="">Selecione uma licença em estoque</option>
-                    {estoque.map((e) => (
-                      <option key={e.licenca_id} value={e.licenca_id}>
-                        {e.nome} ({e.disponiveis} disponíve{e.disponiveis === 1 ? "l" : "is"})
-                      </option>
-                    ))}
-                    {catalogo.length > 0 && (
-                      <option value="__comprar__">🛒 Comprar licença...</option>
-                    )}
-                  </select>
-                )}
-                {mostrarCatalogo ? (
-                  <button
-                    type="button"
-                    className="clients-add-licenca-btn"
-                    onClick={() => setMostrarCatalogo(false)}
-                  >
-                    Cancelar
-                  </button>
-                ) : (
-                  <button
-                    className="clients-add-licenca-btn"
-                    onClick={handleAdicionarLicenca}
-                    disabled={!licencaSelecionada || adicionando}
-                  >
-                    {adicionando ? "Adicionando..." : "+ Adicionar Licença"}
-                  </button>
-                )}
+                <select
+                  className="clients-licencas-plano-select"
+                  value={licencaSelecionada}
+                  onChange={(e) => setLicencaSelecionada(e.target.value)}
+                >
+                  <option value="">Selecione um plano</option>
+                  {catalogo.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome} — {formatarMoeda(c.valor)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="clients-add-licenca-btn"
+                  onClick={handleComprarLicenca}
+                  disabled={!licencaSelecionada || adicionando}
+                >
+                  {adicionando
+                    ? "Comprando..."
+                    : `+ Nova Licença${
+                        planoSelecionado ? ` (${formatarMoeda(planoSelecionado.valor)})` : ""
+                      }`}
+                </button>
               </div>
             </div>
 
             {addError && <p className="clients-error">{addError}</p>}
-            {estoque.length === 0 && (
-              <p className="painel-vazio">
-                Você não tem licenças em estoque.{" "}
-                {catalogo.length > 0 ? (
-                  "Compre uma no seletor acima."
-                ) : (
-                  <>
-                    Compre em <Link href="/painel/licencas">Licenças</Link>.
-                  </>
-                )}
-              </p>
+            {catalogo.length === 0 && (
+              <p className="painel-vazio">Nenhum plano de licença disponível no momento.</p>
             )}
 
             {detalhe.licencas_plano.length === 0 ? (
@@ -615,99 +544,6 @@ export default function DetalheCliente() {
         </>
       )}
 
-      {comprando && revendaId && (
-        <ComprarLicencaModal
-          licenca={comprando}
-          revendaId={revendaId}
-          onFechar={() => setComprando(null)}
-          onComprado={() => {
-            setComprando(null);
-            carregarEstoque(revendaId);
-          }}
-        />
-      )}
     </>
-  );
-}
-
-function ComprarLicencaModal({
-  licenca,
-  revendaId,
-  onFechar,
-  onComprado,
-}: {
-  licenca: LicencaCatalogo;
-  revendaId: string;
-  onFechar: () => void;
-  onComprado: () => void;
-}) {
-  const [quantidade, setQuantidade] = useState("1");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch("/api/painel/licencas", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          revenda_id: revendaId,
-          licenca_id: licenca.id,
-          quantidade: Number(quantidade),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error ?? "Não foi possível concluir a compra");
-        return;
-      }
-
-      onComprado();
-    } catch {
-      setError("Não foi possível conectar ao servidor");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div className="clients-modal-backdrop" onClick={onFechar}>
-      <form className="clients-modal-card" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <div className="clients-modal-header">
-          <h2>Comprar {licenca.nome}</h2>
-          <button type="button" className="clients-modal-fechar" onClick={onFechar} aria-label="Fechar">
-            ×
-          </button>
-        </div>
-
-        <p className="licencas-catalogo-meta">
-          {formatarMoeda(licenca.valor)} · {licenca.periodicidade === "mensal" ? "Mensal" : "Anual"}
-        </p>
-
-        <label className="clients-field">
-          Quantidade
-          <input
-            type="number"
-            min="1"
-            max="100"
-            value={quantidade}
-            onChange={(e) => setQuantidade(e.target.value)}
-            required
-          />
-        </label>
-
-        {error && <p className="clients-error">{error}</p>}
-
-        <button type="submit" className="clients-cadastrar-btn" disabled={loading}>
-          {loading ? "Comprando..." : "Confirmar compra"}
-        </button>
-      </form>
-    </div>
   );
 }

@@ -44,32 +44,28 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
     const clienteId = clienteRows[0].id;
 
-    // UPDATE com subquery FOR UPDATE SKIP LOCKED: reserva uma unidade em estoque
-    // de forma atômica num único statement, evitando que dois pedidos concorrentes
-    // peguem a mesma unidade (pool.query não abre transação entre queries separadas).
-    const { rows } = await pool.query(
-      `UPDATE core.licencas_atribuidas
-       SET empresa_id = $1, updated_at = now()
-       WHERE id = (
-         SELECT id FROM core.licencas_atribuidas
-         WHERE revenda_id = $2 AND licenca_id = $3 AND empresa_id IS NULL AND ativo = true
-         ORDER BY created_at
-         LIMIT 1
-         FOR UPDATE SKIP LOCKED
-       )
-       RETURNING id, licenca_id, empresa_id, ativo, created_at`,
-      [clienteId, revenda_id, licenca_id]
+    const { rows: licencaRows } = await pool.query(
+      `SELECT id FROM core.licencas WHERE id = $1 AND ativo = true`,
+      [licenca_id]
     );
-
-    if (rows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Nenhuma licença disponível em estoque para esse plano" }),
-        { status: 409, headers: { "Content-Type": "application/json" } }
-      );
+    if (licencaRows.length === 0) {
+      return new Response(JSON.stringify({ error: "Plano de licença não encontrado" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
+    // Compra e atribui numa única unidade nova para este cliente — sem passar por
+    // estoque intermediário (o parceiro compra a licença já direto pro cliente).
+    const { rows } = await pool.query(
+      `INSERT INTO core.licencas_atribuidas (licenca_id, revenda_id, empresa_id)
+       VALUES ($1, $2, $3)
+       RETURNING id, licenca_id, empresa_id, ativo, created_at`,
+      [licenca_id, revenda_id, clienteId]
+    );
+
     return new Response(JSON.stringify({ licenca: rows[0] }), {
-      status: 200,
+      status: 201,
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
