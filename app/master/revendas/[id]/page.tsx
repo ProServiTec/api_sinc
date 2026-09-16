@@ -67,6 +67,13 @@ export default function DetalheRevenda() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editando, setEditando] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editRazaoSocial, setEditRazaoSocial] = useState("");
+  const [editCpfCnpj, setEditCpfCnpj] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   function carregar() {
     setLoading(true);
     setError(null);
@@ -86,6 +93,39 @@ export default function DetalheRevenda() {
     Promise.resolve().then(carregar);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
+
+  function iniciarEdicao() {
+    if (!detalhe) return;
+    setEditNome(detalhe.revenda.nome);
+    setEditRazaoSocial(detalhe.revenda.razao_social ?? "");
+    setEditCpfCnpj(detalhe.revenda.cpf_cnpj ?? "");
+    setEditError(null);
+    setEditando(true);
+  }
+
+  async function salvarEdicao() {
+    setSalvandoEdicao(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`/api/master/revendas/${encodeURIComponent(params.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: editNome, razao_social: editRazaoSocial, cpf_cnpj: editCpfCnpj }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível salvar as alterações");
+      }
+
+      setEditando(false);
+      setDetalhe((atual) => (atual ? { ...atual, revenda: { ...atual.revenda, ...data.revenda } } : atual));
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Não foi possível salvar as alterações");
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
 
   async function alternarStatus(licenca: LicencaRevenda) {
     const novoAtivo = !licenca.ativo;
@@ -151,27 +191,67 @@ export default function DetalheRevenda() {
           </section>
 
           <section className="clients-detalhe-card">
-            <h2>Dados do Parceiro</h2>
-            <div className="clients-dados-grid">
-              <div>
-                <span className="clients-dados-label">CNPJ</span>
-                <strong>{detalhe.revenda.cpf_cnpj ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Razão social</span>
-                <strong>{detalhe.revenda.razao_social ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Cadastrada em</span>
-                <strong>{formatarData(detalhe.revenda.created_at)}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Em estoque / atribuídas</span>
-                <strong>
-                  {detalhe.resumo.em_estoque} / {detalhe.resumo.atribuidas}
-                </strong>
-              </div>
+            <div className="clients-dados-header">
+              <h2>Dados do Parceiro</h2>
+              {!editando && (
+                <button type="button" className="clients-editar-btn" onClick={iniciarEdicao}>
+                  Editar
+                </button>
+              )}
             </div>
+
+            {editando ? (
+              <div className="clients-dados-grid">
+                <label className="clients-field">
+                  CNPJ
+                  <input type="text" value={editCpfCnpj} onChange={(e) => setEditCpfCnpj(e.target.value)} />
+                </label>
+                <label className="clients-field">
+                  Razão social
+                  <input
+                    type="text"
+                    value={editRazaoSocial}
+                    onChange={(e) => setEditRazaoSocial(e.target.value)}
+                  />
+                </label>
+                <label className="clients-field">
+                  Nome
+                  <input type="text" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+                </label>
+
+                {editError && <p className="clients-error">{editError}</p>}
+
+                <div className="clients-dados-acoes">
+                  <button type="button" className="clients-cadastrar-btn" onClick={salvarEdicao} disabled={salvandoEdicao}>
+                    {salvandoEdicao ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button type="button" onClick={() => setEditando(false)} disabled={salvandoEdicao}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="clients-dados-grid">
+                <div>
+                  <span className="clients-dados-label">CNPJ</span>
+                  <strong>{detalhe.revenda.cpf_cnpj ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Razão social</span>
+                  <strong>{detalhe.revenda.razao_social ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Cadastrada em</span>
+                  <strong>{formatarData(detalhe.revenda.created_at)}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Em estoque / atribuídas</span>
+                  <strong>
+                    {detalhe.resumo.em_estoque} / {detalhe.resumo.atribuidas}
+                  </strong>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="clients-detalhe-card">

@@ -3,6 +3,7 @@ import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 import { normalizarCodigoLicenca } from "@/lib/licencaCodigo";
 import { gerarTokenApiClient, hashTokenApiClient } from "@/lib/apiClients";
+import { travarOuValidarBancoOrigem } from "@/lib/syncTables";
 
 /**
  * Segunda tela do sincronizador: depois do login (POST /api/login) com
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { empresa_id, codigo } = (body ?? {}) as Record<string, unknown>;
+  const { empresa_id, codigo, pdv_source_database } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof empresa_id !== "string" || empresa_id.trim() === "") {
     const classified = classifyError(new SyncValidationError("empresa_id é obrigatório"));
@@ -115,6 +116,13 @@ export async function POST(request: NextRequest) {
         `UPDATE core.licencas_atribuidas SET filial_id = $1, updated_at = now() WHERE id = $2`,
         [filial.id, licenca.id]
       );
+    }
+
+    // Trava "1 licença = 1 banco de dados" já na ativação: se essa filial já foi
+    // ativada antes por outro PDV+ (id_empresa diferente), avisa agora — sem
+    // esperar o primeiro ciclo de sincronização de dados pra descobrir o conflito.
+    if (typeof pdv_source_database === "string" && pdv_source_database.trim() !== "") {
+      await travarOuValidarBancoOrigem(client, filial.id, pdv_source_database.trim());
     }
 
     const token = gerarTokenApiClient();

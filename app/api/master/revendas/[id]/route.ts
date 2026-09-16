@@ -1,6 +1,7 @@
 import { pool } from "@/lib/db";
-import { classifyError } from "@/lib/errors";
+import { classifyError, SyncValidationError } from "@/lib/errors";
 import { STATUS_LICENCA_SQL } from "@/lib/licencaStatus";
+import { onlyDigits } from "@/lib/cpfCnpj";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -45,6 +46,62 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       JSON.stringify({ revenda: revendaRows[0], resumo, licencas }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
+  } catch (error) {
+    const classified = classifyError(error);
+    return new Response(JSON.stringify(classified), {
+      status: classified.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+
+/** Edita os dados cadastrais do parceiro (nome, razão social, CPF/CNPJ). */
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    const classified = classifyError(new SyncValidationError("Invalid JSON body"));
+    return new Response(JSON.stringify(classified), {
+      status: classified.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const { nome, razao_social, cpf_cnpj } = (body ?? {}) as Record<string, unknown>;
+
+  try {
+    if (typeof nome !== "string" || nome.trim() === "") {
+      throw new SyncValidationError("nome é obrigatório");
+    }
+    if (typeof razao_social !== "string" || razao_social.trim() === "") {
+      throw new SyncValidationError("razao_social é obrigatório");
+    }
+    if (typeof cpf_cnpj !== "string" || onlyDigits(cpf_cnpj) === "") {
+      throw new SyncValidationError("cpf_cnpj é obrigatório");
+    }
+
+    const { rows } = await pool.query(
+      `UPDATE core.empresas
+       SET nome = $1, razao_social = $2, cpf_cnpj = $3, updated_at = now()
+       WHERE id = $4 AND is_admin = true AND is_master = false
+       RETURNING id, nome, razao_social, cpf_cnpj, ativo, created_at`,
+      [nome.trim(), razao_social.trim(), onlyDigits(cpf_cnpj), id]
+    );
+
+    if (rows.length === 0) {
+      return new Response(JSON.stringify({ error: "Parceiro não encontrado" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ revenda: rows[0] }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     const classified = classifyError(error);
     return new Response(JSON.stringify(classified), {

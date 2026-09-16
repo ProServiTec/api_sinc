@@ -288,6 +288,37 @@
   color: #1a1a2e;
 }
 
+.clients-dados-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.clients-dados-header h2 {
+  margin: 0;
+}
+
+.clients-editar-btn {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid #e2e4eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #3956e8;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.clients-editar-btn:hover {
+  border-color: #3956e8;
+}
+
+.clients-dados-acoes {
+  display: flex;
+  gap: 0.6rem;
+  grid-column: 1 / -1;
+}
+
 .clients-dados-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -425,4 +456,34 @@
 
 .clients-dot-inativo {
   background: #ccc;
+}
+
+.clients-fatura-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.clients-fatura-em-dia {
+  background: rgba(46, 139, 87, 0.12);
+  color: #2e8b57;
+}
+
+.clients-fatura-pendente {
+  background: rgba(230, 162, 20, 0.14);
+  color: #b7791f;
+}
+
+.clients-fatura-vencida {
+  background: rgba(192, 57, 43, 0.12);
+  color: #c0392b;
+}
+
+.clients-fatura-sem {
+  background: transparent;
+  color: #999;
+  font-weight: 400;
 }

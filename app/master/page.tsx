@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import "./master.css";
 
 interface Resumo {
@@ -52,21 +53,21 @@ export default function MasterVisaoGeral() {
       {resumo && (
         <>
           <section className="painel-stats">
-            <div className="painel-card">
+            <Link href="/master/revendas" className="painel-card painel-card-link">
               <span className="painel-card-label">Parceiros</span>
               <strong className="painel-card-value">{resumo.revendas.total}</strong>
               <span className="painel-card-hint">{resumo.revendas.ativas} ativas</span>
-            </div>
-            <div className="painel-card">
+            </Link>
+            <Link href="/master/clientes" className="painel-card painel-card-link">
               <span className="painel-card-label">Clientes</span>
               <strong className="painel-card-value painel-card-value-blue">{resumo.clientes.total}</strong>
               <span className="painel-card-hint">{resumo.clientes.ativos} ativos</span>
-            </div>
-            <div className="painel-card">
+            </Link>
+            <Link href="/master/licencas" className="painel-card painel-card-link">
               <span className="painel-card-label">Licenças</span>
               <strong className="painel-card-value">{resumo.licencas.ativas}</strong>
               <span className="painel-card-hint">{resumo.licencas.total} no total</span>
-            </div>
+            </Link>
             <div className="painel-card">
               <span className="painel-card-label">Máquinas conectadas</span>
               <strong className="painel-card-value">{resumo.dispositivos.total}</strong>
@@ -91,24 +92,24 @@ export default function MasterVisaoGeral() {
           <section className="master-secao">
             <h2>Finanças do site</h2>
             <div className="master-uso-grid">
-              <div>
+              <Link href="/master/financas" className="master-dados-item-link">
                 <span className="master-dados-label">Faturas vencidas</span>
                 <strong className="master-valor-vencido">
                   {resumo.titulos.vencidos_count} · {formatarMoeda(resumo.titulos.vencidos_valor)}
                 </strong>
-              </div>
-              <div>
+              </Link>
+              <Link href="/master/financas" className="master-dados-item-link">
                 <span className="master-dados-label">Faturas pendentes</span>
                 <strong className="master-valor-pendente">
                   {resumo.titulos.pendentes_count} · {formatarMoeda(resumo.titulos.pendentes_valor)}
                 </strong>
-              </div>
-              <div>
+              </Link>
+              <Link href="/master/financas" className="master-dados-item-link">
                 <span className="master-dados-label">Total em aberto</span>
                 <strong>
                   {formatarMoeda(Number(resumo.titulos.vencidos_valor) + Number(resumo.titulos.pendentes_valor))}
                 </strong>
-              </div>
+              </Link>
             </div>
           </section>
         </>

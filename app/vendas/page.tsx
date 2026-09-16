@@ -104,13 +104,15 @@ const GRAFICOS_DISPONIVEIS = [
 
 type GraficoId = (typeof GRAFICOS_DISPONIVEIS)[number]["id"];
 
-const NAV_ITEMS = [
-  { label: "Dashboard", active: true },
-  { label: "Vendas", active: false },
-  { label: "Caixa", active: false },
-  { label: "Estoque", active: false },
-  { label: "Financeiro", active: false },
-  { label: "Etiquetas", active: false },
+type AbaPrincipal = "dashboard" | "vendas" | "caixa" | "estoque" | "financeiro" | "etiquetas" | "usuarios";
+
+const NAV_ITEMS: { label: string; aba: AbaPrincipal | null }[] = [
+  { label: "Dashboard", aba: "dashboard" },
+  { label: "Vendas", aba: "vendas" },
+  { label: "Caixa", aba: "caixa" },
+  { label: "Estoque", aba: "estoque" },
+  { label: "Financeiro", aba: "financeiro" },
+  { label: "Etiquetas", aba: "etiquetas" },
 ];
 
 interface Filial {
@@ -360,6 +362,774 @@ function UsuariosPanel({ empresaId }: { empresaId: string }) {
   );
 }
 
+interface VendaLista {
+  id_venda: string;
+  codigo_venda: number;
+  data_hora_criado: string;
+  nome_cliente: string | null;
+  valor_total: number;
+  cancelada_pelo_usuario: string;
+  id_dispositivo: string;
+  codigo_dispositivo: number | null;
+  qtd_itens: number;
+}
+
+function VendasListaPanel({
+  empresaId,
+  filialId,
+  filtros,
+}: {
+  empresaId: string;
+  filialId: string | null;
+  filtros: Filtros;
+}) {
+  const [vendas, setVendas] = useState<VendaLista[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const porPagina = 25;
+
+  useEffect(() => {
+    setPagina(1);
+  }, [empresaId, filialId, filtros]);
+
+  useEffect(() => {
+    setLoading(true);
+    setErro(null);
+    const qs = new URLSearchParams({
+      empresa_id: empresaId,
+      periodo: filtros.periodo,
+      pagina: String(pagina),
+      por_pagina: String(porPagina),
+    });
+    if (filialId) qs.set("filial_id", filialId);
+    if (filtros.dispositivo) qs.set("dispositivo", filtros.dispositivo);
+    if (filtros.periodo === "custom" && filtros.de && filtros.ate) {
+      qs.set("de", filtros.de);
+      qs.set("ate", filtros.ate);
+    }
+
+    fetch(`/api/vendas/lista?${qs.toString()}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Não foi possível carregar as vendas");
+        setVendas(data.vendas);
+        setTotal(data.total);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar vendas"))
+      .finally(() => setLoading(false));
+  }, [empresaId, filialId, filtros, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+      <h2 style={{ margin: 0 }}>Vendas ({total})</h2>
+      {erro && <p className="vendas-erro">{erro}</p>}
+      <table>
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Data</th>
+            <th>Cliente</th>
+            <th>Itens</th>
+            <th>Dispositivo</th>
+            <th>Total</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={7}>
+                <span className="vendas-atualizar-spinner">
+                  <span className="vendas-spinner vendas-spinner-sm" /> Carregando vendas...
+                </span>
+              </td>
+            </tr>
+          )}
+          {!loading && vendas.length === 0 && (
+            <tr>
+              <td colSpan={7}>Nenhuma venda no período selecionado.</td>
+            </tr>
+          )}
+          {vendas.map((v) => (
+            <tr key={v.id_venda}>
+              <td>{v.codigo_venda}</td>
+              <td>{new Date(v.data_hora_criado).toLocaleString("pt-BR")}</td>
+              <td>{v.nome_cliente ?? "—"}</td>
+              <td>{v.qtd_itens}</td>
+              <td>{v.codigo_dispositivo ? `Dispositivo ${v.codigo_dispositivo}` : v.id_dispositivo.slice(0, 8)}</td>
+              <td>{formatarMoeda(Number(v.valor_total))}</td>
+              <td>{v.cancelada_pelo_usuario === "1" ? "Cancelada" : "Concluída"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+            Anterior
+          </button>
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
+            Próxima
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface CaixaSessao {
+  id_fechamento_caixa: string;
+  data_abertura: string;
+  data_fechamento: string | null;
+  id_dispositivo: string;
+  codigo_dispositivo: number | null;
+  total_vendido: number;
+  total_sangrias: number;
+  total_suprimentos: number;
+}
+
+function CaixaPanel({ empresaId, filialId }: { empresaId: string; filialId: string | null }) {
+  const [caixas, setCaixas] = useState<CaixaSessao[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const porPagina = 25;
+
+  useEffect(() => {
+    setPagina(1);
+  }, [empresaId, filialId]);
+
+  useEffect(() => {
+    setLoading(true);
+    setErro(null);
+    const qs = new URLSearchParams({ empresa_id: empresaId, pagina: String(pagina), por_pagina: String(porPagina) });
+    if (filialId) qs.set("filial_id", filialId);
+
+    fetch(`/api/vendas/caixa?${qs.toString()}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Não foi possível carregar os caixas");
+        setCaixas(data.caixas);
+        setTotal(data.total);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar caixas"))
+      .finally(() => setLoading(false));
+  }, [empresaId, filialId, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+      <h2 style={{ margin: 0 }}>Caixa ({total})</h2>
+      {erro && <p className="vendas-erro">{erro}</p>}
+      <table>
+        <thead>
+          <tr>
+            <th>Abertura</th>
+            <th>Fechamento</th>
+            <th>Dispositivo</th>
+            <th>Vendido</th>
+            <th>Sangrias</th>
+            <th>Suprimentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={6}>Carregando...</td>
+            </tr>
+          )}
+          {!loading && caixas.length === 0 && (
+            <tr>
+              <td colSpan={6}>Nenhuma sessão de caixa encontrada.</td>
+            </tr>
+          )}
+          {caixas.map((c) => (
+            <tr key={c.id_fechamento_caixa}>
+              <td>{new Date(c.data_abertura).toLocaleString("pt-BR")}</td>
+              <td>{c.data_fechamento ? new Date(c.data_fechamento).toLocaleString("pt-BR") : "Em aberto"}</td>
+              <td>{c.codigo_dispositivo ? `Dispositivo ${c.codigo_dispositivo}` : c.id_dispositivo.slice(0, 8)}</td>
+              <td>{formatarMoeda(Number(c.total_vendido))}</td>
+              <td>{formatarMoeda(Number(c.total_sangrias))}</td>
+              <td>{formatarMoeda(Number(c.total_suprimentos))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+            Anterior
+          </button>
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
+            Próxima
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface ProdutoEstoque {
+  id_produto: string;
+  descricao: string;
+  preco_custo: number;
+  preco_venda: number;
+  qtd_estoque: number;
+  qtd_estoque_minimo: number;
+  grupo: string | null;
+}
+
+function EstoquePanel({ empresaId, filialId }: { empresaId: string; filialId: string | null }) {
+  const [produtos, setProdutos] = useState<ProdutoEstoque[]>([]);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [busca, setBusca] = useState("");
+  const [somenteBaixoEstoque, setSomenteBaixoEstoque] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const porPagina = 50;
+
+  useEffect(() => {
+    setPagina(1);
+  }, [empresaId, filialId, busca, somenteBaixoEstoque]);
+
+  useEffect(() => {
+    setLoading(true);
+    setErro(null);
+    const qs = new URLSearchParams({ empresa_id: empresaId, pagina: String(pagina), por_pagina: String(porPagina) });
+    if (filialId) qs.set("filial_id", filialId);
+    if (busca) qs.set("busca", busca);
+    if (somenteBaixoEstoque) qs.set("somente_baixo_estoque", "1");
+
+    fetch(`/api/vendas/estoque?${qs.toString()}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Não foi possível carregar o estoque");
+        setProdutos(data.produtos);
+        setTotal(data.total);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar estoque"))
+      .finally(() => setLoading(false));
+  }, [empresaId, filialId, busca, somenteBaixoEstoque, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+      <h2 style={{ margin: 0 }}>Estoque ({total})</h2>
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Buscar produto..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+        <label>
+          <input
+            type="checkbox"
+            checked={somenteBaixoEstoque}
+            onChange={(e) => setSomenteBaixoEstoque(e.target.checked)}
+          />{" "}
+          Só estoque baixo
+        </label>
+      </div>
+      {erro && <p className="vendas-erro">{erro}</p>}
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Grupo</th>
+            <th>Estoque</th>
+            <th>Mínimo</th>
+            <th>Custo</th>
+            <th>Venda</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={6}>Carregando...</td>
+            </tr>
+          )}
+          {!loading && produtos.length === 0 && (
+            <tr>
+              <td colSpan={6}>Nenhum produto encontrado.</td>
+            </tr>
+          )}
+          {produtos.map((p) => {
+            const baixoEstoque = Number(p.qtd_estoque) <= Number(p.qtd_estoque_minimo);
+            return (
+              <tr key={p.id_produto} style={baixoEstoque ? { color: "#c0392b" } : undefined}>
+                <td>{p.descricao}</td>
+                <td>{p.grupo ?? "—"}</td>
+                <td>{Number(p.qtd_estoque)}</td>
+                <td>{Number(p.qtd_estoque_minimo)}</td>
+                <td>{formatarMoeda(Number(p.preco_custo))}</td>
+                <td>{formatarMoeda(Number(p.preco_venda))}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+            Anterior
+          </button>
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
+            Próxima
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+interface ContaFinanceira {
+  id_conta_pagar_receber: string;
+  tipo_conta: number;
+  valor: number;
+  vencimento: string;
+  documento: string | null;
+  nome_cliente: string | null;
+  valor_pago: number;
+}
+
+interface ResumoFinanceiro {
+  pendente: number;
+  pago_parcial: number;
+  vencidos: number;
+  pagos: number;
+  total: number;
+}
+
+const MESES = [
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+];
+
+function statusConta(c: ContaFinanceira): "Pago" | "Pago Parcial" | "Vencida" | "Pendente" {
+  if (c.valor_pago >= c.valor) return "Pago";
+  if (c.valor_pago > 0) return "Pago Parcial";
+  if (new Date(c.vencimento) < new Date()) return "Vencida";
+  return "Pendente";
+}
+
+function exportarCsv(contas: ContaFinanceira[], tipo: "receber" | "pagar") {
+  const linhas = [
+    ["Cliente/Documento", "Valor", "Pago", "Vencimento", "Status"],
+    ...contas.map((c) => [
+      c.nome_cliente ?? c.documento ?? "—",
+      String(c.valor),
+      String(c.valor_pago),
+      new Date(c.vencimento).toLocaleDateString("pt-BR"),
+      statusConta(c),
+    ]),
+  ];
+  const csv = linhas.map((l) => l.map((v) => `"${v.replace(/"/g, '""')}"`).join(";")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `financeiro-${tipo}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId: string | null }) {
+  const [tipo, setTipo] = useState<"receber" | "pagar">("receber");
+  const agora = new Date();
+  const [mes, setMes] = useState(agora.getUTCMonth() + 1);
+  const [ano, setAno] = useState(agora.getUTCFullYear());
+  const [buscaCliente, setBuscaCliente] = useState("");
+  const [contas, setContas] = useState<ContaFinanceira[]>([]);
+  const [resumo, setResumo] = useState<ResumoFinanceiro | null>(null);
+  const [total, setTotal] = useState(0);
+  const [pagina, setPagina] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+  const porPagina = 25;
+
+  useEffect(() => {
+    setPagina(1);
+  }, [empresaId, filialId, tipo, mes, ano, buscaCliente]);
+
+  useEffect(() => {
+    setLoading(true);
+    setErro(null);
+    const qs = new URLSearchParams({
+      empresa_id: empresaId,
+      tipo,
+      mes: String(mes),
+      ano: String(ano),
+      pagina: String(pagina),
+      por_pagina: String(porPagina),
+    });
+    if (filialId) qs.set("filial_id", filialId);
+    if (buscaCliente) qs.set("busca_cliente", buscaCliente);
+
+    fetch(`/api/vendas/financeiro?${qs.toString()}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Não foi possível carregar o financeiro");
+        setContas(data.contas);
+        setResumo(data.resumo);
+        setTotal(data.total);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar financeiro"))
+      .finally(() => setLoading(false));
+  }, [empresaId, filialId, tipo, mes, ano, buscaCliente, pagina]);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            className={`vendas-preset${tipo === "receber" ? " vendas-preset-ativo" : ""}`}
+            onClick={() => setTipo("receber")}
+          >
+            A Receber
+          </button>
+          <button
+            type="button"
+            className={`vendas-preset${tipo === "pagar" ? " vendas-preset-ativo" : ""}`}
+            onClick={() => setTipo("pagar")}
+          >
+            A Pagar
+          </button>
+        </div>
+        <button type="button" onClick={() => exportarCsv(contas, tipo)} disabled={contas.length === 0}>
+          Exportar CSV
+        </button>
+      </div>
+
+      {resumo && (
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {tipo === "receber" ? (
+            <>
+              <div className="vendas-financeiro-card">
+                <span>Pendente</span>
+                <strong>{formatarMoeda(resumo.pendente)}</strong>
+              </div>
+              <div className="vendas-financeiro-card">
+                <span>Pago Parcial</span>
+                <strong>{formatarMoeda(resumo.pago_parcial)}</strong>
+              </div>
+              <div className="vendas-financeiro-card vendas-financeiro-card-alerta">
+                <span>Vencidos</span>
+                <strong>{formatarMoeda(resumo.vencidos)}</strong>
+              </div>
+              <div className="vendas-financeiro-card vendas-financeiro-card-ok">
+                <span>Recebidos</span>
+                <strong>{formatarMoeda(resumo.pagos)}</strong>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="vendas-financeiro-card vendas-financeiro-card-ok">
+                <span>Pagas</span>
+                <strong>{formatarMoeda(resumo.pagos)}</strong>
+              </div>
+              <div className="vendas-financeiro-card">
+                <span>Pendentes</span>
+                <strong>{formatarMoeda(resumo.pendente)}</strong>
+              </div>
+              <div className="vendas-financeiro-card vendas-financeiro-card-alerta">
+                <span>Vencidas</span>
+                <strong>{formatarMoeda(resumo.vencidos)}</strong>
+              </div>
+            </>
+          )}
+          <div className="vendas-financeiro-card">
+            <span>Total</span>
+            <strong>{formatarMoeda(resumo.total)}</strong>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Buscar cliente..."
+          value={buscaCliente}
+          onChange={(e) => setBuscaCliente(e.target.value)}
+        />
+        <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
+          {MESES.map((nome, i) => (
+            <option key={nome} value={i + 1}>
+              {nome}
+            </option>
+          ))}
+        </select>
+        <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
+          {[ano - 1, ano, ano + 1].map((a) => (
+            <option key={a} value={a}>
+              {a}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {erro && <p className="vendas-erro">{erro}</p>}
+
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente/Documento</th>
+            <th>Valor</th>
+            <th>Pago</th>
+            <th>Vencimento</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={5}>Carregando...</td>
+            </tr>
+          )}
+          {!loading && contas.length === 0 && (
+            <tr>
+              <td colSpan={5}>Nenhuma conta {tipo === "receber" ? "a receber" : "a pagar"} no período.</td>
+            </tr>
+          )}
+          {contas.map((c) => (
+            <tr key={c.id_conta_pagar_receber}>
+              <td>{c.nome_cliente ?? c.documento ?? "—"}</td>
+              <td>{formatarMoeda(Number(c.valor))}</td>
+              <td>{formatarMoeda(Number(c.valor_pago))}</td>
+              <td>{new Date(c.vencimento).toLocaleDateString("pt-BR")}</td>
+              <td>{statusConta(c)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {totalPaginas > 1 && (
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+            Anterior
+          </button>
+          <span>
+            Página {pagina} de {totalPaginas}
+          </span>
+          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
+            Próxima
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+const TAMANHOS_ETIQUETA = [
+  { id: "gondola_100x30", label: "Gôndola 100x30mm", larguraMm: 100, alturaMm: 30 },
+  { id: "termica_50x30", label: "Térmica 50x30mm", larguraMm: 50, alturaMm: 30 },
+  { id: "termica_80x40", label: "Térmica 80x40mm", larguraMm: 80, alturaMm: 40 },
+];
+
+function EtiquetasPanel({ empresaId, filialId }: { empresaId: string; filialId: string | null }) {
+  const [produtos, setProdutos] = useState<ProdutoEstoque[]>([]);
+  const [busca, setBusca] = useState("");
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [tamanhoId, setTamanhoId] = useState(TAMANHOS_ETIQUETA[0].id);
+  const [copias, setCopias] = useState(1);
+  const [somenteCodigoBarras, setSomenteCodigoBarras] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setErro(null);
+    const qs = new URLSearchParams({ empresa_id: empresaId, por_pagina: "200" });
+    if (filialId) qs.set("filial_id", filialId);
+    if (busca) qs.set("busca", busca);
+
+    fetch(`/api/vendas/estoque?${qs.toString()}`)
+      .then(async (r) => {
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error ?? "Não foi possível carregar os produtos");
+        setProdutos(data.produtos);
+      })
+      .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar produtos"))
+      .finally(() => setLoading(false));
+  }, [empresaId, filialId, busca]);
+
+  function alternarSelecao(id: string) {
+    setSelecionados((atual) => {
+      const novo = new Set(atual);
+      if (novo.has(id)) novo.delete(id);
+      else novo.add(id);
+      return novo;
+    });
+  }
+
+  function imprimir() {
+    const tamanho = TAMANHOS_ETIQUETA.find((t) => t.id === tamanhoId) ?? TAMANHOS_ETIQUETA[0];
+    const escolhidos = produtos.filter((p) => selecionados.has(p.id_produto));
+    const janela = window.open("", "_blank", "width=800,height=600");
+    if (!janela) return;
+
+    const etiquetasHtml = escolhidos
+      .flatMap((p) =>
+        Array.from({ length: copias }).map(
+          () => `
+        <div class="etiqueta">
+          ${!somenteCodigoBarras ? `<div class="etiqueta-nome">${p.descricao}</div>` : ""}
+          ${!somenteCodigoBarras ? `<div class="etiqueta-preco">${formatarMoeda(Number(p.preco_venda))}</div>` : ""}
+          <div class="etiqueta-codigo">*${p.id_produto.slice(0, 12).toUpperCase()}*</div>
+        </div>`
+        )
+      )
+      .join("");
+
+    janela.document.write(`
+      <html>
+        <head>
+          <title>Etiquetas</title>
+          <style>
+            @page { margin: 5mm; }
+            body { margin: 0; font-family: Arial, sans-serif; }
+            .folha { display: flex; flex-wrap: wrap; gap: 2mm; }
+            .etiqueta {
+              width: ${tamanho.larguraMm}mm;
+              height: ${tamanho.alturaMm}mm;
+              border: 1px solid #ccc;
+              padding: 1mm 2mm;
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              text-align: center;
+              overflow: hidden;
+            }
+            .etiqueta-nome { font-size: 10px; font-weight: bold; }
+            .etiqueta-preco { font-size: 12px; font-weight: bold; }
+            .etiqueta-codigo { font-family: "Libre Barcode 39", monospace; font-size: 16px; letter-spacing: 1px; }
+          </style>
+        </head>
+        <body>
+          <div class="folha">${etiquetasHtml}</div>
+          <script>window.onload = () => window.print();</script>
+        </body>
+      </html>
+    `);
+    janela.document.close();
+  }
+
+  return (
+    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
+      <h2 style={{ margin: 0 }}>Etiquetas</h2>
+      {erro && <p className="vendas-erro">{erro}</p>}
+
+      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <strong>Produtos ({produtos.length})</strong>
+            <span>{selecionados.size} selecionado(s)</span>
+          </div>
+          <input
+            type="text"
+            placeholder="Buscar por nome..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            style={{ width: "100%", marginBottom: 8 }}
+          />
+          <div style={{ maxHeight: 400, overflowY: "auto", border: "1px solid #e2e4eb", borderRadius: 8 }}>
+            {loading && <p style={{ padding: 12 }}>Carregando...</p>}
+            {!loading &&
+              produtos.map((p) => (
+                <label
+                  key={p.id_produto}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    padding: "8px 12px",
+                    borderBottom: "1px solid #f0f0f0",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span>
+                    <input
+                      type="checkbox"
+                      checked={selecionados.has(p.id_produto)}
+                      onChange={() => alternarSelecao(p.id_produto)}
+                    />{" "}
+                    {p.descricao}
+                  </span>
+                  <span>{formatarMoeda(Number(p.preco_venda))}</span>
+                </label>
+              ))}
+          </div>
+        </div>
+
+        <div style={{ flex: "1 1 260px", minWidth: 240 }}>
+          <strong>Configuração</strong>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+            <label>
+              Tamanho
+              <select
+                value={tamanhoId}
+                onChange={(e) => setTamanhoId(e.target.value)}
+                style={{ display: "block", width: "100%" }}
+              >
+                {TAMANHOS_ETIQUETA.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Cópias por produto
+              <input
+                type="number"
+                min={1}
+                value={copias}
+                onChange={(e) => setCopias(Math.max(1, Number(e.target.value)))}
+                style={{ display: "block", width: "100%" }}
+              />
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={somenteCodigoBarras}
+                onChange={(e) => setSomenteCodigoBarras(e.target.checked)}
+              />{" "}
+              Só código de barras (etiqueta avulsa)
+            </label>
+            <button type="button" onClick={imprimir} disabled={selecionados.size === 0}>
+              Imprimir ({selecionados.size * copias} etiqueta(s))
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function formatarMoeda(valor: number) {
   return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -397,7 +1167,7 @@ export default function Vendas() {
   // hydration mismatch).
   const [empresa, setEmpresa] = useState<EmpresaSessao | null>(null);
   const [usuario, setUsuario] = useState<SubUsuarioSessao | null>(null);
-  const [aba, setAba] = useState<"dashboard" | "usuarios">("dashboard");
+  const [aba, setAba] = useState<AbaPrincipal>("dashboard");
   const [filtros, setFiltros] = useState<Filtros>({ periodo: "caixa_atual", dispositivo: "", de: "", ate: "" });
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -568,16 +1338,22 @@ export default function Vendas() {
         </div>
 
         <nav className="vendas-nav">
-          {NAV_ITEMS.map((item) => (
-            <span
-              key={item.label}
-              className={`vendas-nav-item${item.active && aba === "dashboard" ? " vendas-nav-item-active" : ""}`}
-              onClick={() => setAba("dashboard")}
-              style={{ cursor: "pointer" }}
-            >
-              {item.label}
-            </span>
-          ))}
+          {NAV_ITEMS.map((item) =>
+            item.aba ? (
+              <span
+                key={item.label}
+                className={`vendas-nav-item${aba === item.aba ? " vendas-nav-item-active" : ""}`}
+                onClick={() => setAba(item.aba as AbaPrincipal)}
+                style={{ cursor: "pointer" }}
+              >
+                {item.label}
+              </span>
+            ) : (
+              <span key={item.label} className="vendas-nav-item" title="Em breve">
+                {item.label}
+              </span>
+            )
+          )}
           {!usuario && (
             <span
               className={`vendas-nav-item${aba === "usuarios" ? " vendas-nav-item-active" : ""}`}
@@ -653,6 +1429,16 @@ export default function Vendas() {
           })()
         )}
 
+        {aba === "vendas" && empresa && (
+          <VendasListaPanel empresaId={empresa.id} filialId={filialAtiva} filtros={filtros} />
+        )}
+        {aba === "caixa" && empresa && <CaixaPanel empresaId={empresa.id} filialId={filialAtiva} />}
+        {aba === "estoque" && empresa && <EstoquePanel empresaId={empresa.id} filialId={filialAtiva} />}
+        {aba === "financeiro" && empresa && <FinanceiroPanel empresaId={empresa.id} filialId={filialAtiva} />}
+        {aba === "etiquetas" && empresa && <EtiquetasPanel empresaId={empresa.id} filialId={filialAtiva} />}
+
+        {aba === "dashboard" && (
+        <>
         <section className="vendas-filtros">
           <span className="vendas-filtros-label">Período:</span>
           {PRESETS.map((p) => (
@@ -696,7 +1482,13 @@ export default function Vendas() {
             Excel
           </button>
           <button className="vendas-atualizar" onClick={atualizar} disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar"}
+            {loading ? (
+              <span className="vendas-atualizar-spinner">
+                <span className="vendas-spinner vendas-spinner-sm vendas-spinner-light" /> Atualizando...
+              </span>
+            ) : (
+              "Atualizar"
+            )}
           </button>
 
           {resumo?.ultima_sincronizacao && (
@@ -707,6 +1499,13 @@ export default function Vendas() {
         </section>
 
         {error && <p className="vendas-erro">{error}</p>}
+
+        {!resumo && loading && (
+          <div className="vendas-loading-inicial">
+            <span className="vendas-spinner" />
+            <span>Carregando dados de vendas...</span>
+          </div>
+        )}
 
         {resumo && resumo.caixas_abertos.length > 0 && (
           <section className="vendas-caixas">
@@ -724,7 +1523,7 @@ export default function Vendas() {
 
         {resumo && (
           <>
-            <section className="vendas-stats">
+            <section className={`vendas-stats${loading ? " vendas-stats-atualizando" : ""}`}>
               <div className="vendas-card">
                 <span className="vendas-card-label">Receita Total</span>
                 <strong className="vendas-card-value">{formatarMoeda(resumo.resumo.receita_total)}</strong>
@@ -824,6 +1623,8 @@ export default function Vendas() {
               )}
             </section>
           </>
+        )}
+        </>
         )}
         </>
         )}

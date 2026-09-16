@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import "../../../painel/clients/clients.css";
 
@@ -24,6 +24,16 @@ interface Licenca {
   dispositivos: Dispositivo[];
 }
 
+interface Titulo {
+  id: string;
+  tipo: string;
+  descricao: string | null;
+  vencimento: string;
+  valor: number;
+  saldo: number;
+  status: string;
+}
+
 interface Detalhe {
   cliente: {
     id: string;
@@ -37,6 +47,7 @@ interface Detalhe {
   maquinas: number;
   ultima_sincronizacao: string | null;
   licencas: Licenca[];
+  titulos: Titulo[];
 }
 
 function formatarData(iso: string) {
@@ -47,11 +58,23 @@ function formatarDataHora(iso: string) {
   return new Date(iso).toLocaleString("pt-BR");
 }
 
+function formatarMoeda(valor: number) {
+  return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
 export default function DetalheEmpresaMaster() {
   const params = useParams<{ token: string }>();
+  const router = useRouter();
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [editando, setEditando] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editRazaoSocial, setEditRazaoSocial] = useState("");
+  const [editCpfCnpj, setEditCpfCnpj] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/master/empresas/${encodeURIComponent(params.token)}`)
@@ -65,6 +88,45 @@ export default function DetalheEmpresaMaster() {
       .catch((err) => setError(err.message ?? "Não foi possível carregar a empresa"))
       .finally(() => setLoading(false));
   }, [params.token]);
+
+  function iniciarEdicao() {
+    if (!detalhe) return;
+    setEditNome(detalhe.cliente.nome);
+    setEditRazaoSocial(detalhe.cliente.razao_social ?? "");
+    setEditCpfCnpj(detalhe.cliente.cpf_cnpj ?? "");
+    setEditError(null);
+    setEditando(true);
+  }
+
+  async function salvarEdicao() {
+    setSalvandoEdicao(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`/api/master/empresas/${encodeURIComponent(params.token)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome: editNome, razao_social: editRazaoSocial, cpf_cnpj: editCpfCnpj }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível salvar as alterações");
+      }
+
+      setEditando(false);
+
+      if (data.token !== params.token) {
+        router.replace(`/master/clientes/${data.token}`);
+        return;
+      }
+
+      setDetalhe((atual) => (atual ? { ...atual, cliente: { ...atual.cliente, ...data.cliente } } : atual));
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Não foi possível salvar as alterações");
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
 
   return (
     <>
@@ -108,21 +170,61 @@ export default function DetalheEmpresaMaster() {
           </section>
 
           <section className="clients-detalhe-card">
-            <h2>Dados da Empresa</h2>
-            <div className="clients-dados-grid">
-              <div>
-                <span className="clients-dados-label">CNPJ</span>
-                <strong>{detalhe.cliente.cpf_cnpj ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Razão social</span>
-                <strong>{detalhe.cliente.razao_social ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Nome fantasia</span>
-                <strong>{detalhe.cliente.nome}</strong>
-              </div>
+            <div className="clients-dados-header">
+              <h2>Dados da Empresa</h2>
+              {!editando && (
+                <button type="button" className="clients-editar-btn" onClick={iniciarEdicao}>
+                  Editar
+                </button>
+              )}
             </div>
+
+            {editando ? (
+              <div className="clients-dados-grid">
+                <label className="clients-field">
+                  CNPJ
+                  <input type="text" value={editCpfCnpj} onChange={(e) => setEditCpfCnpj(e.target.value)} />
+                </label>
+                <label className="clients-field">
+                  Razão social
+                  <input
+                    type="text"
+                    value={editRazaoSocial}
+                    onChange={(e) => setEditRazaoSocial(e.target.value)}
+                  />
+                </label>
+                <label className="clients-field">
+                  Nome fantasia
+                  <input type="text" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+                </label>
+
+                {editError && <p className="clients-error">{editError}</p>}
+
+                <div className="clients-dados-acoes">
+                  <button type="button" className="clients-cadastrar-btn" onClick={salvarEdicao} disabled={salvandoEdicao}>
+                    {salvandoEdicao ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button type="button" onClick={() => setEditando(false)} disabled={salvandoEdicao}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="clients-dados-grid">
+                <div>
+                  <span className="clients-dados-label">CNPJ</span>
+                  <strong>{detalhe.cliente.cpf_cnpj ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Razão social</span>
+                  <strong>{detalhe.cliente.razao_social ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Nome fantasia</span>
+                  <strong>{detalhe.cliente.nome}</strong>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="clients-detalhe-card">
@@ -173,6 +275,36 @@ export default function DetalheEmpresaMaster() {
                   </li>
                 ))}
               </ul>
+            )}
+          </section>
+
+          <section className="clients-detalhe-card">
+            <h2>Faturas ({detalhe.titulos.length})</h2>
+            {detalhe.titulos.length === 0 ? (
+              <p className="painel-vazio">Nenhuma fatura ainda.</p>
+            ) : (
+              <table className="clients-tabela">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Saldo</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalhe.titulos.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.descricao ?? t.tipo}</td>
+                      <td>{formatarData(t.vencimento)}</td>
+                      <td>{formatarMoeda(t.valor)}</td>
+                      <td>{formatarMoeda(t.saldo)}</td>
+                      <td>{t.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </section>
         </>

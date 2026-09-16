@@ -10,7 +10,7 @@ let colunaPdvSourceDatabaseCache: { existe: boolean; expiresAt: number } | null 
 /** Consulta information_schema (nunca falha, mesmo se a coluna não existir) em vez
  * de tentar usar a coluna direto — evita abortar a transação de upsert por causa
  * de uma migração que ainda não rodou nesta base. */
-async function colunaPdvSourceDatabaseExiste(): Promise<boolean> {
+export async function colunaPdvSourceDatabaseExiste(): Promise<boolean> {
   if (colunaPdvSourceDatabaseCache && colunaPdvSourceDatabaseCache.expiresAt > Date.now()) {
     return colunaPdvSourceDatabaseCache.existe;
   }
@@ -25,24 +25,20 @@ async function colunaPdvSourceDatabaseExiste(): Promise<boolean> {
   return existe;
 }
 
-/** Trava "1 licença = 1 banco de dados": a primeira sincronização de uma filial
- * grava qual id_empresa do PDV+ (base_centralizada, enviado como
- * _zaya_source_database) é dono dela. Sincronizações seguintes com um
- * id_empresa diferente são rejeitadas — mas o MESMO id_empresa pode vir de
- * quantos computadores forem (isso é permitido e esperado). */
-async function verificarBancoOrigem(
+/** Trava "1 licença = 1 banco de dados": a primeira vez que uma filial informa qual
+ * id_empresa do PDV+ (base_centralizada) é sua origem — seja na ativação da licença
+ * ou na primeira sincronização de dados — grava esse valor. Chamadas seguintes com um
+ * id_empresa diferente são rejeitadas; mas o MESMO id_empresa pode vir de quantos
+ * computadores forem (isso é permitido e esperado). Usada tanto por POST
+ * /api/sync/licencas/ativar (pra avisar o instalador na hora, antes de ativar) quanto
+ * por verificarBancoOrigem (durante a sincronização de dados). */
+export async function travarOuValidarBancoOrigem(
   client: PoolClient,
   filialId: string,
-  registros: Record<string, unknown>[]
+  origem: string
 ): Promise<void> {
-  const origem = registros
-    .map((r) => r["_zaya_source_database"])
-    .find((v): v is string => typeof v === "string" && v.trim() !== "");
-
-  if (!origem) return; // instalação antiga que ainda não manda esse campo
-
   if (!(await colunaPdvSourceDatabaseExiste())) {
-    return; // migração ainda não aplicada nesta base: não trava o sync por causa disso
+    return; // migração ainda não aplicada nesta base: não trava por causa disso
   }
 
   const { rows } = await client.query<{ pdv_source_database: string | null }>(
@@ -62,10 +58,24 @@ async function verificarBancoOrigem(
 
   if (atual !== origem) {
     throw new SyncBancoDivergenteError(
-      "Esta licença já está vinculada a outro banco de dados do PDV+. " +
+      "Este banco de dados do PDV+ já está vinculado a outra licença. " +
         "Cada licença só pode sincronizar os dados de uma única instalação."
     );
   }
+}
+
+async function verificarBancoOrigem(
+  client: PoolClient,
+  filialId: string,
+  registros: Record<string, unknown>[]
+): Promise<void> {
+  const origem = registros
+    .map((r) => r["_zaya_source_database"])
+    .find((v): v is string => typeof v === "string" && v.trim() !== "");
+
+  if (!origem) return; // instalação antiga que ainda não manda esse campo
+
+  await travarOuValidarBancoOrigem(client, filialId, origem);
 }
 
 const TABLES_CACHE_TTL_MS = 5 * 60 * 1000;

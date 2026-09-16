@@ -4,6 +4,8 @@ import { SubmitEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import "../../painel/clients/clients.css";
 
+type FaturaStatus = "vencida" | "pendente" | "em_dia" | null;
+
 interface Cliente {
   id: string;
   nome: string;
@@ -13,7 +15,18 @@ interface Cliente {
   licencas: number;
   licencas_ativas: number;
   dispositivos: number;
+  fatura_status: FaturaStatus;
   token: string | null;
+}
+
+function FaturaBadge({ status }: { status: FaturaStatus }) {
+  if (!status) return <span className="clients-fatura-badge clients-fatura-sem">—</span>;
+  const config = {
+    vencida: { label: "Vencida", className: "clients-fatura-vencida" },
+    pendente: { label: "Pendente", className: "clients-fatura-pendente" },
+    em_dia: { label: "Em dia", className: "clients-fatura-em-dia" },
+  }[status];
+  return <span className={`clients-fatura-badge ${config.className}`}>{config.label}</span>;
 }
 
 interface Resumo {
@@ -82,10 +95,10 @@ export default function MasterClientes() {
             <span className="painel-card-label">Empresas</span>
             <strong className="painel-card-value">{resumo.clientes.total}</strong>
           </div>
-          <div className="painel-card">
+          <Link href="/master/licencas" className="painel-card painel-card-link">
             <span className="painel-card-label">Licenças ativas</span>
             <strong className="painel-card-value painel-card-value-blue">{resumo.licencas_ativas}</strong>
-          </div>
+          </Link>
           <div className="painel-card">
             <span className="painel-card-label">Máquinas conectadas</span>
             <strong className="painel-card-value">{resumo.maquinas}</strong>
@@ -117,6 +130,7 @@ export default function MasterClientes() {
                 <th>CNPJ</th>
                 <th>Licenças</th>
                 <th>Máquinas</th>
+                <th>Fatura</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -133,6 +147,9 @@ export default function MasterClientes() {
                     {c.licencas_ativas}/{c.licencas}
                   </td>
                   <td>{c.dispositivos}</td>
+                  <td>
+                    <FaturaBadge status={c.fatura_status} />
+                  </td>
                   <td>
                     <span className={c.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
                       {c.ativo ? "Ativo" : "Inativo"}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import "./clients/clients.css";
 
 interface Resumo {
   empresa: { id: string; nome: string };
@@ -21,7 +23,19 @@ interface Resumo {
     ativo: boolean;
     licencas: number;
     dispositivos: number;
+    fatura_status: "vencida" | "pendente" | "em_dia" | null;
+    token: string | null;
   }[];
+}
+
+function FaturaBadge({ status }: { status: "vencida" | "pendente" | "em_dia" | null }) {
+  if (!status) return <span className="clients-fatura-badge clients-fatura-sem">—</span>;
+  const config = {
+    vencida: { label: "Vencida", className: "clients-fatura-vencida" },
+    pendente: { label: "Pendente", className: "clients-fatura-pendente" },
+    em_dia: { label: "Em dia", className: "clients-fatura-em-dia" },
+  }[status];
+  return <span className={`clients-fatura-badge ${config.className}`}>{config.label}</span>;
 }
 
 function formatarMoeda(valor: string | number) {
@@ -66,17 +80,17 @@ export default function Painel() {
       {resumo && (
         <>
           <section className="painel-stats">
-            <div className="painel-card">
+            <Link href="/painel/clients" className="painel-card painel-card-link">
               <span className="painel-card-label">Clientes</span>
               <strong className="painel-card-value">{resumo.clientes.total}</strong>
               <span className="painel-card-hint">{resumo.clientes.ativos} ativos</span>
-            </div>
+            </Link>
 
-            <div className="painel-card">
+            <Link href="/painel/licencas" className="painel-card painel-card-link">
               <span className="painel-card-label">Licenças ativas</span>
               <strong className="painel-card-value painel-card-value-blue">{resumo.licencas.ativas}</strong>
               <span className="painel-card-hint">{resumo.licencas.total} no total</span>
-            </div>
+            </Link>
 
             <div className="painel-card">
               <span className="painel-card-label">Máquinas conectadas</span>
@@ -84,7 +98,7 @@ export default function Painel() {
               <span className="painel-card-hint">{resumo.dispositivos.ativos} ativas</span>
             </div>
 
-            <div className="painel-card">
+            <Link href="/painel/faturas" className="painel-card painel-card-link">
               <span className="painel-card-label">Faturas em aberto</span>
               <strong className="painel-card-value">
                 {formatarMoeda(Number(resumo.titulos.vencidos_valor) + Number(resumo.titulos.pendentes_valor))}
@@ -92,7 +106,7 @@ export default function Painel() {
               <span className="painel-card-hint">
                 {resumo.titulos.vencidos_count + resumo.titulos.pendentes_count} título(s)
               </span>
-            </div>
+            </Link>
           </section>
 
           {resumo.titulos.vencidos_count > 0 && (
@@ -128,21 +142,37 @@ export default function Painel() {
               <p className="painel-vazio">Nenhum cliente cadastrado ainda.</p>
             ) : (
               <ul className="painel-clientes-lista">
-                {resumo.clientes_recentes.map((cliente) => (
-                  <li key={cliente.id} className="painel-cliente-item">
-                    <div>
-                      <strong>{cliente.nome}</strong>
-                      {cliente.cpf_cnpj && <span className="painel-cliente-doc">{cliente.cpf_cnpj}</span>}
-                    </div>
-                    <div className="painel-cliente-meta">
-                      <span>{cliente.licencas} licença(s)</span>
-                      <span>{cliente.dispositivos} máquina(s)</span>
-                      <span className={cliente.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
-                        {cliente.ativo ? "Ativo" : "Inativo"}
-                      </span>
-                    </div>
-                  </li>
-                ))}
+                {resumo.clientes_recentes.map((cliente) => {
+                  const conteudo = (
+                    <>
+                      <div>
+                        <strong>{cliente.nome}</strong>
+                        {cliente.cpf_cnpj && <span className="painel-cliente-doc">{cliente.cpf_cnpj}</span>}
+                      </div>
+                      <div className="painel-cliente-meta">
+                        <span>{cliente.licencas} licença(s)</span>
+                        <span>{cliente.dispositivos} máquina(s)</span>
+                        <FaturaBadge status={cliente.fatura_status} />
+                        <span className={cliente.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
+                          {cliente.ativo ? "Ativo" : "Inativo"}
+                        </span>
+                      </div>
+                    </>
+                  );
+                  return cliente.token ? (
+                    <Link
+                      key={cliente.id}
+                      href={`/painel/clients/${cliente.token}`}
+                      className="painel-cliente-item painel-cliente-item-link"
+                    >
+                      {conteudo}
+                    </Link>
+                  ) : (
+                    <li key={cliente.id} className="painel-cliente-item">
+                      {conteudo}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

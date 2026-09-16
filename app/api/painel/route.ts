@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
+import { encryptToToken } from "@/lib/clientsLink";
 
 export async function GET(request: NextRequest) {
   const empresaId = request.nextUrl.searchParams.get("empresa_id");
@@ -59,7 +60,16 @@ export async function GET(request: NextRequest) {
         pool.query(
           `SELECT e.id, e.nome, e.razao_social, e.cpf_cnpj, e.ativo,
                   (SELECT count(*)::int FROM core.filiais f WHERE f.empresa_id = e.id) AS licencas,
-                  (SELECT count(*)::int FROM core.dispositivos d WHERE d.empresa_id = e.id) AS dispositivos
+                  (SELECT count(*)::int FROM core.dispositivos d WHERE d.empresa_id = e.id) AS dispositivos,
+                  (CASE
+                     WHEN EXISTS (SELECT 1 FROM financeiro.titulos t WHERE t.empresa_id = e.id AND t.saldo > 0 AND t.vencimento < CURRENT_DATE)
+                       THEN 'vencida'
+                     WHEN EXISTS (SELECT 1 FROM financeiro.titulos t WHERE t.empresa_id = e.id AND t.saldo > 0)
+                       THEN 'pendente'
+                     WHEN EXISTS (SELECT 1 FROM financeiro.titulos t WHERE t.empresa_id = e.id)
+                       THEN 'em_dia'
+                     ELSE NULL
+                   END) AS fatura_status
            FROM core.empresas e
            WHERE e.is_admin = false AND e.revenda_id = $1
            ORDER BY e.created_at DESC
@@ -75,7 +85,11 @@ export async function GET(request: NextRequest) {
         licencas: licencasResumo.rows[0],
         dispositivos: dispositivosResumo.rows[0],
         titulos: titulosResumo.rows[0],
-        clientes_recentes: clientesRecentes.rows,
+        // O link de detalhes leva o CPF/CNPJ criptografado, nunca em texto puro na URL.
+        clientes_recentes: clientesRecentes.rows.map((c) => ({
+          ...c,
+          token: c.cpf_cnpj ? encryptToToken(c.cpf_cnpj) : null,
+        })),
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

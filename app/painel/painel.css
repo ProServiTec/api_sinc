@@ -365,3 +365,27 @@
 .clients-licenca-remover-btn:hover {
   text-decoration: underline;
 }
+
+/* Cards e itens clicáveis na Visão Geral */
+
+.painel-card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+}
+
+.painel-card-link:hover {
+  border-color: var(--brand);
+  box-shadow: 0 2px 8px rgba(57, 86, 232, 0.08);
+}
+
+.painel-cliente-item-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.painel-cliente-item-link:hover {
+  background: rgba(57, 86, 232, 0.04);
+}

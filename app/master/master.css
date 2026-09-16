@@ -45,6 +45,23 @@
   gap: 0.3rem;
 }
 
+.master-dados-item-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 0.4rem;
+  margin: -0.4rem;
+  transition: background 0.15s;
+}
+
+.master-dados-item-link:hover {
+  background: rgba(57, 86, 232, 0.05);
+}
+
 .master-dados-label {
   font-size: 0.72rem;
   letter-spacing: 0.03em;

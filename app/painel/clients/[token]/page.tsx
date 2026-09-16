@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { SubmitEvent, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import "../clients.css";
 import "../../painel.css";
@@ -32,6 +32,16 @@ interface Licenca {
   identificacao: IdentificacaoFilial | null;
 }
 
+interface Titulo {
+  id: string;
+  tipo: string;
+  descricao: string | null;
+  vencimento: string;
+  valor: number;
+  saldo: number;
+  status: string;
+}
+
 interface LicencaPlano {
   id: string;
   codigo: string;
@@ -58,6 +68,7 @@ interface Detalhe {
   ultima_sincronizacao: string | null;
   licencas: Licenca[];
   licencas_plano: LicencaPlano[];
+  titulos: Titulo[];
 }
 
 interface EstoqueItem {
@@ -66,6 +77,15 @@ interface EstoqueItem {
   valor: string;
   periodicidade: "mensal" | "anual";
   disponiveis: number;
+}
+
+interface LicencaCatalogo {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  valor: string;
+  periodicidade: "mensal" | "anual";
+  dia_fechamento: number;
 }
 
 interface EmpresaSessao {
@@ -89,15 +109,26 @@ function formatarMoeda(valor: string | number) {
 
 export default function DetalheCliente() {
   const params = useParams<{ token: string }>();
+  const router = useRouter();
   const [detalhe, setDetalhe] = useState<Detalhe | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [editando, setEditando] = useState(false);
+  const [editNome, setEditNome] = useState("");
+  const [editRazaoSocial, setEditRazaoSocial] = useState("");
+  const [editCpfCnpj, setEditCpfCnpj] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
   const [revendaId, setRevendaId] = useState<string | null>(null);
   const [estoque, setEstoque] = useState<EstoqueItem[]>([]);
+  const [catalogo, setCatalogo] = useState<LicencaCatalogo[]>([]);
   const [licencaSelecionada, setLicencaSelecionada] = useState("");
   const [adicionando, setAdicionando] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [comprando, setComprando] = useState<LicencaCatalogo | null>(null);
+  const [mostrarCatalogo, setMostrarCatalogo] = useState(false);
 
   const [atualizando, setAtualizando] = useState(false);
   const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
@@ -131,6 +162,17 @@ export default function DetalheCliente() {
       });
   }
 
+  function carregarCatalogo(revenda: string) {
+    return fetch(`/api/painel/licencas?revenda_id=${encodeURIComponent(revenda)}`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.ok) setCatalogo(data.catalogo as LicencaCatalogo[]);
+      })
+      .catch(() => {
+        // Catálogo é um complemento da tela; falha aqui não deve bloquear os dados do cliente.
+      });
+  }
+
   useEffect(() => {
     Promise.resolve().then(() => {
       const raw = sessionStorage.getItem("empresa");
@@ -143,6 +185,7 @@ export default function DetalheCliente() {
       setRevendaId(empresa.id);
       carregarDetalhe(empresa.id);
       carregarEstoque(empresa.id);
+      carregarCatalogo(empresa.id);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.token]);
@@ -222,6 +265,53 @@ export default function DetalheCliente() {
     }
   }
 
+  function iniciarEdicao() {
+    if (!detalhe) return;
+    setEditNome(detalhe.cliente.nome);
+    setEditRazaoSocial(detalhe.cliente.razao_social ?? "");
+    setEditCpfCnpj(detalhe.cliente.cpf_cnpj ?? "");
+    setEditError(null);
+    setEditando(true);
+  }
+
+  async function salvarEdicao() {
+    if (!revendaId) return;
+    setSalvandoEdicao(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`/api/painel/clientes/${encodeURIComponent(params.token)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenda_id: revendaId,
+          nome: editNome,
+          razao_social: editRazaoSocial,
+          cpf_cnpj: editCpfCnpj,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível salvar as alterações");
+      }
+
+      setEditando(false);
+
+      // O CPF/CNPJ mudou: o token da URL (que é o próprio documento
+      // criptografado) ficou obsoleto — navega pro novo antes de recarregar.
+      if (data.token !== params.token) {
+        router.replace(`/painel/clients/${data.token}`);
+        return;
+      }
+
+      setDetalhe((atual) => (atual ? { ...atual, cliente: { ...atual.cliente, ...data.cliente } } : atual));
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : "Não foi possível salvar as alterações");
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
+
   return (
     <>
       <Link href="/painel/clients" className="clients-voltar">
@@ -271,54 +361,142 @@ export default function DetalheCliente() {
           </section>
 
           <section className="clients-detalhe-card">
-            <h2>Dados da Empresa</h2>
-            <div className="clients-dados-grid">
-              <div>
-                <span className="clients-dados-label">CNPJ</span>
-                <strong>{detalhe.cliente.cpf_cnpj ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Razão social</span>
-                <strong>{detalhe.cliente.razao_social ?? "—"}</strong>
-              </div>
-              <div>
-                <span className="clients-dados-label">Nome fantasia</span>
-                <strong>{detalhe.cliente.nome}</strong>
-              </div>
+            <div className="clients-dados-header">
+              <h2>Dados da Empresa</h2>
+              {!editando && (
+                <button type="button" className="clients-editar-btn" onClick={iniciarEdicao}>
+                  Editar
+                </button>
+              )}
             </div>
+
+            {editando ? (
+              <div className="clients-dados-grid">
+                <label className="clients-field">
+                  CNPJ
+                  <input type="text" value={editCpfCnpj} onChange={(e) => setEditCpfCnpj(e.target.value)} />
+                </label>
+                <label className="clients-field">
+                  Razão social
+                  <input
+                    type="text"
+                    value={editRazaoSocial}
+                    onChange={(e) => setEditRazaoSocial(e.target.value)}
+                  />
+                </label>
+                <label className="clients-field">
+                  Nome fantasia
+                  <input type="text" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
+                </label>
+
+                {editError && <p className="clients-error">{editError}</p>}
+
+                <div className="clients-dados-acoes">
+                  <button type="button" className="clients-cadastrar-btn" onClick={salvarEdicao} disabled={salvandoEdicao}>
+                    {salvandoEdicao ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button type="button" onClick={() => setEditando(false)} disabled={salvandoEdicao}>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="clients-dados-grid">
+                <div>
+                  <span className="clients-dados-label">CNPJ</span>
+                  <strong>{detalhe.cliente.cpf_cnpj ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Razão social</span>
+                  <strong>{detalhe.cliente.razao_social ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Nome fantasia</span>
+                  <strong>{detalhe.cliente.nome}</strong>
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="clients-detalhe-card">
             <div className="clients-licencas-header">
               <h2>Licenças do Plano ({detalhe.licencas_plano.length})</h2>
               <div className="clients-licencas-plano-selecao">
-                <select
-                  className="clients-licencas-plano-select"
-                  value={licencaSelecionada}
-                  onChange={(e) => setLicencaSelecionada(e.target.value)}
-                >
-                  <option value="">Selecione uma licença em estoque</option>
-                  {estoque.map((e) => (
-                    <option key={e.licenca_id} value={e.licenca_id}>
-                      {e.nome} ({e.disponiveis} disponíve{e.disponiveis === 1 ? "l" : "is"})
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className="clients-add-licenca-btn"
-                  onClick={handleAdicionarLicenca}
-                  disabled={!licencaSelecionada || adicionando}
-                >
-                  {adicionando ? "Adicionando..." : "+ Adicionar Licença"}
-                </button>
+                {mostrarCatalogo ? (
+                  <select
+                    className="clients-licencas-plano-select"
+                    value=""
+                    onChange={(e) => {
+                      const item = catalogo.find((c) => c.id === e.target.value);
+                      if (item) {
+                        setComprando(item);
+                        setMostrarCatalogo(false);
+                      }
+                    }}
+                  >
+                    <option value="">Escolha o plano para comprar</option>
+                    {catalogo.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nome} — {formatarMoeda(c.valor)}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <select
+                    className="clients-licencas-plano-select"
+                    value={licencaSelecionada}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "__comprar__") {
+                        setLicencaSelecionada("");
+                        setMostrarCatalogo(true);
+                      } else {
+                        setLicencaSelecionada(value);
+                      }
+                    }}
+                  >
+                    <option value="">Selecione uma licença em estoque</option>
+                    {estoque.map((e) => (
+                      <option key={e.licenca_id} value={e.licenca_id}>
+                        {e.nome} ({e.disponiveis} disponíve{e.disponiveis === 1 ? "l" : "is"})
+                      </option>
+                    ))}
+                    {catalogo.length > 0 && (
+                      <option value="__comprar__">🛒 Comprar licença...</option>
+                    )}
+                  </select>
+                )}
+                {mostrarCatalogo ? (
+                  <button
+                    type="button"
+                    className="clients-add-licenca-btn"
+                    onClick={() => setMostrarCatalogo(false)}
+                  >
+                    Cancelar
+                  </button>
+                ) : (
+                  <button
+                    className="clients-add-licenca-btn"
+                    onClick={handleAdicionarLicenca}
+                    disabled={!licencaSelecionada || adicionando}
+                  >
+                    {adicionando ? "Adicionando..." : "+ Adicionar Licença"}
+                  </button>
+                )}
               </div>
             </div>
 
             {addError && <p className="clients-error">{addError}</p>}
             {estoque.length === 0 && (
               <p className="painel-vazio">
-                Você não tem licenças em estoque. Compre em{" "}
-                <Link href="/painel/licencas">Licenças</Link>.
+                Você não tem licenças em estoque.{" "}
+                {catalogo.length > 0 ? (
+                  "Compre uma no seletor acima."
+                ) : (
+                  <>
+                    Compre em <Link href="/painel/licencas">Licenças</Link>.
+                  </>
+                )}
               </p>
             )}
 
@@ -404,8 +582,132 @@ export default function DetalheCliente() {
               </ul>
             )}
           </section>
+
+          <section className="clients-detalhe-card">
+            <h2>Faturas ({detalhe.titulos.length})</h2>
+            {detalhe.titulos.length === 0 ? (
+              <p className="painel-vazio">Nenhuma fatura ainda.</p>
+            ) : (
+              <table className="clients-tabela">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Saldo</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detalhe.titulos.map((t) => (
+                    <tr key={t.id}>
+                      <td>{t.descricao ?? t.tipo}</td>
+                      <td>{formatarData(t.vencimento)}</td>
+                      <td>{formatarMoeda(t.valor)}</td>
+                      <td>{formatarMoeda(t.saldo)}</td>
+                      <td>{t.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
         </>
       )}
+
+      {comprando && revendaId && (
+        <ComprarLicencaModal
+          licenca={comprando}
+          revendaId={revendaId}
+          onFechar={() => setComprando(null)}
+          onComprado={() => {
+            setComprando(null);
+            carregarEstoque(revendaId);
+          }}
+        />
+      )}
     </>
+  );
+}
+
+function ComprarLicencaModal({
+  licenca,
+  revendaId,
+  onFechar,
+  onComprado,
+}: {
+  licenca: LicencaCatalogo;
+  revendaId: string;
+  onFechar: () => void;
+  onComprado: () => void;
+}) {
+  const [quantidade, setQuantidade] = useState("1");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/painel/licencas", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenda_id: revendaId,
+          licenca_id: licenca.id,
+          quantidade: Number(quantidade),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error ?? "Não foi possível concluir a compra");
+        return;
+      }
+
+      onComprado();
+    } catch {
+      setError("Não foi possível conectar ao servidor");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="clients-modal-backdrop" onClick={onFechar}>
+      <form className="clients-modal-card" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+        <div className="clients-modal-header">
+          <h2>Comprar {licenca.nome}</h2>
+          <button type="button" className="clients-modal-fechar" onClick={onFechar} aria-label="Fechar">
+            ×
+          </button>
+        </div>
+
+        <p className="licencas-catalogo-meta">
+          {formatarMoeda(licenca.valor)} · {licenca.periodicidade === "mensal" ? "Mensal" : "Anual"}
+        </p>
+
+        <label className="clients-field">
+          Quantidade
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={quantidade}
+            onChange={(e) => setQuantidade(e.target.value)}
+            required
+          />
+        </label>
+
+        {error && <p className="clients-error">{error}</p>}
+
+        <button type="submit" className="clients-cadastrar-btn" disabled={loading}>
+          {loading ? "Comprando..." : "Confirmar compra"}
+        </button>
+      </form>
+    </div>
   );
 }
