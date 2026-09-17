@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
@@ -78,11 +79,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
     }
 
+    // Gera o id em código (em vez de depender de gen_random_uuid() no banco,
+    // que exige a extensão pgcrypto e nem sempre está disponível/permitida).
+    const pedidoId = randomUUID();
+
     const { rows: pedidoRows } = await pool.query(
-      `INSERT INTO core.pedidos_licenca (revenda_id, empresa_id, licenca_id, valor)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO core.pedidos_licenca (id, revenda_id, empresa_id, licenca_id, valor)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id, valor, status, created_at`,
-      [revenda_id, clienteId, licenca.id, licenca.valor]
+      [pedidoId, revenda_id, clienteId, licenca.id, licenca.valor]
     );
     const pedido = pedidoRows[0];
 

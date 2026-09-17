@@ -19,8 +19,11 @@ BEGIN;
 
 ALTER TABLE core.master_config ADD COLUMN IF NOT EXISTS infinitepay_handle text;
 
+-- id é gerado pela aplicação (crypto.randomUUID()) na hora do INSERT, sem
+-- default no banco — evita depender da extensão pgcrypto/gen_random_uuid(),
+-- que pode não estar disponível ou permitida no banco de produção.
 CREATE TABLE IF NOT EXISTS core.pedidos_licenca (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  id uuid PRIMARY KEY,
   revenda_id uuid NOT NULL REFERENCES core.empresas(id),
   empresa_id uuid NOT NULL REFERENCES core.empresas(id),
   licenca_id uuid NOT NULL REFERENCES core.licencas(id),
