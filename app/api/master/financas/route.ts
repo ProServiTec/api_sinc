@@ -4,7 +4,7 @@ import { STATUS_LICENCA_SQL } from "@/lib/licencaStatus";
 
 export async function GET() {
   try {
-    const [totais, porEmpresa, titulos, licencasCompradas] = await Promise.all([
+    const [totais, porEmpresa, titulos, licencasCompradas, pedidosPendentes] = await Promise.all([
       pool.query(
         `SELECT
            count(*) FILTER (WHERE saldo > 0 AND vencimento < CURRENT_DATE)::int AS vencidos_count,
@@ -50,6 +50,16 @@ export async function GET() {
          LEFT JOIN core.empresas e ON e.id = la.empresa_id
          ORDER BY la.created_at DESC`
       ),
+      pool.query(
+        `SELECT pl.id, pl.valor, pl.status, pl.checkout_url, pl.created_at,
+                r.nome AS revenda_nome, e.nome AS empresa_nome, l.nome AS licenca_nome
+         FROM core.pedidos_licenca pl
+         JOIN core.empresas r ON r.id = pl.revenda_id
+         JOIN core.empresas e ON e.id = pl.empresa_id
+         JOIN core.licencas l ON l.id = pl.licenca_id
+         WHERE pl.status = 'pendente'
+         ORDER BY pl.created_at DESC`
+      ),
     ]);
 
     return new Response(
@@ -58,6 +68,7 @@ export async function GET() {
         por_empresa: porEmpresa.rows,
         titulos: titulos.rows,
         licencas_compradas: licencasCompradas.rows,
+        pedidos_pendentes: pedidosPendentes.rows,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );

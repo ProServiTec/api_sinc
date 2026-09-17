@@ -14,6 +14,7 @@ interface EmpresaSessao {
 export default function MasterConfiguracoes() {
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [chavePix, setChavePix] = useState("");
+  const [infinitepayHandle, setInfinitepayHandle] = useState("");
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +37,7 @@ export default function MasterConfiguracoes() {
           throw new Error(data.error ?? "Não foi possível carregar as configurações");
         }
         setChavePix(data.chave_pix ?? "");
+        setInfinitepayHandle(data.infinitepay_handle ?? "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível carregar as configurações");
       } finally {
@@ -56,13 +58,17 @@ export default function MasterConfiguracoes() {
       const response = await fetch("/api/master/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ empresa_id: empresaId, chave_pix: chavePix }),
+        body: JSON.stringify({
+          empresa_id: empresaId,
+          chave_pix: chavePix,
+          infinitepay_handle: infinitepayHandle,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error ?? "Não foi possível salvar a chave PIX");
+        setError(data.error ?? "Não foi possível salvar as configurações");
         return;
       }
 
@@ -85,7 +91,7 @@ export default function MasterConfiguracoes() {
 
       {!loading && (
         <section className="master-secao">
-          <h2>Chave PIX de recebimento</h2>
+          <h2>Recebimento PIX (InfinitePay)</h2>
           <form className="master-config-form" onSubmit={handleSubmit}>
             <label className="clients-field">
               Chave PIX
@@ -98,8 +104,24 @@ export default function MasterConfiguracoes() {
               />
             </label>
 
+            <label className="clients-field">
+              InfiniteTag (handle da InfinitePay)
+              <input
+                type="text"
+                value={infinitepayHandle}
+                onChange={(e) => setInfinitepayHandle(e.target.value)}
+                placeholder="seu-handle (sem o $ do início)"
+              />
+            </label>
+            <p className="painel-card-hint">
+              É o nome de usuário da conta InfinitePay que vai <strong>receber</strong> os pagamentos das
+              licenças compradas pelos revendedores. Antes de usar, habilite o &quot;Checkout Externo&quot;
+              em <code>app.infinitepay.io</code> (Configurações → Checkout Externo) — sem isso a InfinitePay
+              recusa a criação de links de pagamento pra essa conta.
+            </p>
+
             {error && <p className="clients-error">{error}</p>}
-            {sucesso && <p className="master-config-sucesso">Chave PIX salva com sucesso.</p>}
+            {sucesso && <p className="master-config-sucesso">Configurações salvas com sucesso.</p>}
 
             <button type="submit" className="clients-cadastrar-btn master-config-salvar" disabled={salvando}>
               {salvando ? "Salvando..." : "Salvar"}

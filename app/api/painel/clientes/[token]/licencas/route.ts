@@ -2,7 +2,15 @@ import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 import { decryptToken } from "@/lib/clientsLink";
+import { criarLinkPagamento, InfinitePayError } from "@/lib/infinitepay";
 
+/**
+ * Compra de licença agora é em duas etapas: este endpoint cria um PEDIDO
+ * pendente e devolve o link de pagamento PIX da InfinitePay — a licença só
+ * nasce em core.licencas_atribuidas quando o pagamento é confirmado (webhook
+ * em /api/webhooks/infinitepay, ou confirmação manual do Master enquanto o
+ * domínio de produção/webhook não está configurado).
+ */
 export async function POST(request: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
@@ -45,7 +53,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const clienteId = clienteRows[0].id;
 
     const { rows: licencaRows } = await pool.query(
-      `SELECT id FROM core.licencas WHERE id = $1 AND ativo = true`,
+      `SELECT id, nome, valor FROM core.licencas WHERE id = $1 AND ativo = true`,
       [licenca_id]
     );
     if (licencaRows.length === 0) {
@@ -54,20 +62,62 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         headers: { "Content-Type": "application/json" },
       });
     }
+    const licenca = licencaRows[0];
 
-    // Compra e atribui numa única unidade nova para este cliente — sem passar por
-    // estoque intermediário (o parceiro compra a licença já direto pro cliente).
-    const { rows } = await pool.query(
-      `INSERT INTO core.licencas_atribuidas (licenca_id, revenda_id, empresa_id)
-       VALUES ($1, $2, $3)
-       RETURNING id, licenca_id, empresa_id, ativo, created_at`,
-      [licenca_id, revenda_id, clienteId]
+    const { rows: configRows } = await pool.query(
+      `SELECT mc.infinitepay_handle
+       FROM core.master_config mc
+       JOIN core.empresas e ON e.id = mc.empresa_id
+       WHERE e.is_master = true
+       LIMIT 1`
     );
+    const handle = configRows[0]?.infinitepay_handle as string | undefined;
+    if (!handle) {
+      throw new SyncValidationError(
+        "Pagamento PIX não configurado: peça pro Master cadastrar a InfiniteTag em Configurações"
+      );
+    }
 
-    return new Response(JSON.stringify({ licenca: rows[0] }), {
-      status: 201,
-      headers: { "Content-Type": "application/json" },
-    });
+    const { rows: pedidoRows } = await pool.query(
+      `INSERT INTO core.pedidos_licenca (revenda_id, empresa_id, licenca_id, valor)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, valor, status, created_at`,
+      [revenda_id, clienteId, licenca.id, licenca.valor]
+    );
+    const pedido = pedidoRows[0];
+
+    const appUrl = process.env.APP_URL?.replace(/\/$/, "");
+    const valorCentavos = Math.round(Number(licenca.valor) * 100);
+
+    try {
+      const link = await criarLinkPagamento({
+        handle,
+        items: [{ quantity: 1, price: valorCentavos, description: licenca.nome }],
+        orderNsu: pedido.id,
+        redirectUrl: appUrl ? `${appUrl}/painel/clients/${token}?pedido=${pedido.id}` : undefined,
+        webhookUrl: appUrl ? `${appUrl}/api/webhooks/infinitepay` : undefined,
+      });
+
+      const { rows: atualizado } = await pool.query(
+        `UPDATE core.pedidos_licenca
+         SET checkout_url = $2, invoice_slug = $3
+         WHERE id = $1
+         RETURNING id, valor, status, checkout_url, created_at`,
+        [pedido.id, link.checkoutUrl, link.slug]
+      );
+
+      return new Response(JSON.stringify({ pedido: atualizado[0] }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (linkError) {
+      // Não deixa pedido órfão sem link de pagamento — cancela e propaga o erro.
+      await pool.query(`UPDATE core.pedidos_licenca SET status = 'cancelado' WHERE id = $1`, [pedido.id]);
+      if (linkError instanceof InfinitePayError) {
+        throw new SyncValidationError(`Não foi possível gerar o link de pagamento: ${linkError.message}`);
+      }
+      throw linkError;
+    }
   } catch (error) {
     const classified = classifyError(error);
     return new Response(JSON.stringify(classified), {

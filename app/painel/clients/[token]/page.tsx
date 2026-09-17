@@ -119,6 +119,14 @@ export default function DetalheCliente() {
   const [adicionando, setAdicionando] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
 
+  const [pedidoPix, setPedidoPix] = useState<{
+    id: string;
+    status: "pendente" | "pago" | "cancelado";
+    checkout_url: string | null;
+    valor: string;
+  } | null>(null);
+  const [verificandoPagamento, setVerificandoPagamento] = useState(false);
+
   const [atualizando, setAtualizando] = useState(false);
   const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
 
@@ -180,18 +188,52 @@ export default function DetalheCliente() {
       const data = await response.json();
 
       if (!response.ok) {
-        setAddError(data.error ?? "Não foi possível comprar a licença");
+        setAddError(data.error ?? "Não foi possível gerar a cobrança PIX");
         return;
       }
 
-      setLicencaSelecionada("");
-      await carregarDetalhe(revendaId);
+      setPedidoPix(data.pedido);
+      if (data.pedido.checkout_url) {
+        window.open(data.pedido.checkout_url, "_blank", "noopener,noreferrer");
+      }
     } catch {
       setAddError("Não foi possível conectar ao servidor");
     } finally {
       setAdicionando(false);
     }
   }
+
+  async function verificarPagamentoPedido() {
+    if (!revendaId || !pedidoPix) return;
+
+    setVerificandoPagamento(true);
+    try {
+      const response = await fetch(
+        `/api/painel/clientes/${encodeURIComponent(params.token)}/licencas/pedidos/${pedidoPix.id}?revenda_id=${encodeURIComponent(revendaId)}`
+      );
+      const data = await response.json();
+      if (!response.ok) return;
+
+      setPedidoPix(data.pedido);
+
+      if (data.pedido.status === "pago") {
+        setLicencaSelecionada("");
+        await carregarDetalhe(revendaId);
+      }
+    } finally {
+      setVerificandoPagamento(false);
+    }
+  }
+
+  // Enquanto tem um pedido PIX pendente aberto, verifica automaticamente a
+  // cada 5s se já foi pago (o backend confirma via webhook da InfinitePay ou
+  // confirmação manual do Master — este polling só reflete esse status).
+  useEffect(() => {
+    if (!pedidoPix || pedidoPix.status !== "pendente") return;
+    const intervalo = setInterval(verificarPagamentoPedido, 5000);
+    return () => clearInterval(intervalo);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedidoPix?.id, pedidoPix?.status]);
 
   async function handleRemoverLicenca(licencaPlanoId: string) {
     if (!revendaId) return;
@@ -413,10 +455,10 @@ export default function DetalheCliente() {
                 <button
                   className="clients-add-licenca-btn"
                   onClick={handleComprarLicenca}
-                  disabled={!licencaSelecionada || adicionando}
+                  disabled={!licencaSelecionada || adicionando || !!pedidoPix}
                 >
                   {adicionando
-                    ? "Comprando..."
+                    ? "Gerando cobrança PIX..."
                     : `+ Nova Licença${
                         planoSelecionado ? ` (${formatarMoeda(planoSelecionado.valor)})` : ""
                       }`}
@@ -427,6 +469,35 @@ export default function DetalheCliente() {
             {addError && <p className="clients-error">{addError}</p>}
             {catalogo.length === 0 && (
               <p className="painel-vazio">Nenhum plano de licença disponível no momento.</p>
+            )}
+
+            {pedidoPix && pedidoPix.status === "pendente" && (
+              <div className="clients-detalhe-card" style={{ marginBottom: "1rem" }}>
+                <strong>Aguardando pagamento PIX de {formatarMoeda(pedidoPix.valor)}...</strong>
+                <p className="painel-card-hint">
+                  A licença só é liberada pro cliente depois que o pagamento for confirmado.
+                </p>
+                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                  {pedidoPix.checkout_url && (
+                    <a
+                      href={pedidoPix.checkout_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="clients-cadastrar-btn"
+                    >
+                      Abrir cobrança PIX
+                    </a>
+                  )}
+                  <button onClick={verificarPagamentoPedido} disabled={verificandoPagamento}>
+                    {verificandoPagamento ? "Verificando..." : "Já paguei — verificar agora"}
+                  </button>
+                  <button onClick={() => setPedidoPix(null)}>Cancelar</button>
+                </div>
+              </div>
+            )}
+
+            {pedidoPix && pedidoPix.status === "pago" && (
+              <p className="master-config-sucesso">Pagamento confirmado! Licença liberada pro cliente.</p>
             )}
 
             {detalhe.licencas_plano.length === 0 ? (

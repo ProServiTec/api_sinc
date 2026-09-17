@@ -41,6 +41,17 @@ interface LicencaComprada {
   status: "ativa" | "atrasada" | "cancelada";
 }
 
+interface PedidoPendente {
+  id: string;
+  valor: string;
+  status: "pendente" | "pago" | "cancelado";
+  checkout_url: string | null;
+  created_at: string;
+  revenda_nome: string;
+  empresa_nome: string;
+  licenca_nome: string;
+}
+
 interface Financas {
   totais: {
     vencidos_count: number;
@@ -53,6 +64,7 @@ interface Financas {
   por_empresa: EmpresaFinanceiro[];
   titulos: Titulo[];
   licencas_compradas: LicencaComprada[];
+  pedidos_pendentes: PedidoPendente[];
 }
 
 function formatarMoeda(valor: string | number) {
@@ -85,9 +97,10 @@ export default function MasterFinancas() {
   const [dados, setDados] = useState<Financas | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/master/financas")
+  function carregar() {
+    return fetch("/api/master/financas")
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) {
@@ -97,7 +110,29 @@ export default function MasterFinancas() {
       })
       .catch((err) => setError(err.message ?? "Não foi possível carregar as finanças"))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    carregar();
   }, []);
+
+  async function handleConfirmarPagamento(pedidoId: string) {
+    if (!confirm("Confirmar que este pagamento PIX foi recebido? Isso vai criar a licença pro cliente.")) return;
+
+    setConfirmando(pedidoId);
+    try {
+      const response = await fetch(`/api/master/pedidos-licenca/${pedidoId}/confirmar`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível confirmar o pagamento");
+      }
+      await carregar();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Não foi possível confirmar o pagamento");
+    } finally {
+      setConfirmando(null);
+    }
+  }
 
   return (
     <>
@@ -132,6 +167,58 @@ export default function MasterFinancas() {
               <strong className="painel-card-value painel-card-value-blue">
                 {formatarMoeda(Number(dados.totais.vencidos_valor) + Number(dados.totais.pendentes_valor))}
               </strong>
+            </div>
+          </section>
+
+          <section className="master-financas-titulos">
+            <h2>Pedidos de licença aguardando pagamento PIX ({dados.pedidos_pendentes.length})</h2>
+            <div className="clients-tabela-wrap">
+              {dados.pedidos_pendentes.length === 0 ? (
+                <p className="painel-vazio">Nenhum pedido pendente no momento.</p>
+              ) : (
+                <table className="clients-tabela">
+                  <thead>
+                    <tr>
+                      <th>Revendedor</th>
+                      <th>Cliente</th>
+                      <th>Licença</th>
+                      <th>Valor</th>
+                      <th>Criado em</th>
+                      <th>Link de pagamento</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dados.pedidos_pendentes.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.revenda_nome}</td>
+                        <td>{p.empresa_nome}</td>
+                        <td>{p.licenca_nome}</td>
+                        <td>{formatarMoeda(p.valor)}</td>
+                        <td>{new Date(p.created_at).toLocaleString("pt-BR")}</td>
+                        <td>
+                          {p.checkout_url ? (
+                            <a href={p.checkout_url} target="_blank" rel="noreferrer" className="clients-ver-detalhes">
+                              Abrir checkout
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td>
+                          <button
+                            className="clients-cadastrar-btn"
+                            onClick={() => handleConfirmarPagamento(p.id)}
+                            disabled={confirmando === p.id}
+                          >
+                            {confirmando === p.id ? "Confirmando..." : "Confirmar pagamento"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </section>
 
