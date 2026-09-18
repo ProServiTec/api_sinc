@@ -31,82 +31,26 @@ export async function GET(request: NextRequest) {
     const p = [empresaId, filialId, inicioMes.toISOString(), fimMes.toISOString(), buscaCliente, dispositivoId];
     let baseQuery = "";
 
-    if (tipo === "pagar") {
-      baseQuery = `
-        FROM pdv.conta_pagar_receber c
-        LEFT JOIN pdv.cliente cl ON cl._zaya_empresa_id = c._zaya_empresa_id AND cl.id_cliente = c.id_cliente
-        LEFT JOIN (
-          SELECT id_conta_pagar_receber, SUM(valor_liquidado) AS pago
-          FROM pdv.recebimento_pagamento
-          WHERE _zaya_empresa_id = $1 AND data_hora_deletado IS NULL
-          GROUP BY id_conta_pagar_receber
-        ) r ON r.id_conta_pagar_receber = c.id_conta_pagar_receber
-        WHERE c._zaya_empresa_id = $1
-          AND c.positiva_negativa = 0
-          AND c.data_hora_deletado IS NULL
-          AND ($2::uuid IS NULL OR c._zaya_filial_id = $2)
-          AND c.vencimento::timestamp >= $3::timestamp
-          AND c.vencimento::timestamp < $4::timestamp
-          AND ($5::text IS NULL OR cl.nome ILIKE '%' || $5 || '%')
-          AND ($6::text IS NULL OR c._zaya_dispositivo_id::text = $6)
-      `;
-    } else {
-      baseQuery = `
-        FROM (
-          SELECT 
-            c.id_conta_pagar_receber::text AS id_conta_pagar_receber, 
-            c.tipo_conta::bigint AS tipo_conta, 
-            c.valor::double precision AS valor, 
-            c.vencimento::text AS vencimento, 
-            c.documento::text AS documento, 
-            cl.nome::text AS nome_cliente,
-            c._zaya_empresa_id, 
-            c._zaya_filial_id, 
-            c.data_hora_deletado, 
-            c._zaya_dispositivo_id::text AS id_dispositivo
-          FROM pdv.conta_pagar_receber c
-          LEFT JOIN pdv.cliente cl ON cl._zaya_empresa_id = c._zaya_empresa_id AND cl.id_cliente = c.id_cliente
-          WHERE c.positiva_negativa = 1
-          
-          UNION ALL
-          
-          SELECT 
-            vfp.id_venda_forma_pagamento::text AS id_conta_pagar_receber, 
-            4::bigint AS tipo_conta, 
-            vfp.valor::double precision AS valor, 
-            COALESCE(vfp.vencimento, v.data_hora_criado)::text AS vencimento, 
-            ('Venda (Crediário) #' || v.codigo_venda)::text AS documento, 
-            v.nome_cliente::text AS nome_cliente,
-            vfp._zaya_empresa_id, 
-            vfp._zaya_filial_id, 
-            vfp.data_hora_deletado, 
-            v.id_dispositivo::text AS id_dispositivo
-          FROM pdv.venda_forma_pagamento vfp
-          JOIN pdv.venda v ON v.id_venda = vfp.id_venda
-          WHERE vfp.forma_pagamento = 4 AND v.data_hora_deletado IS NULL
-        ) c
-        LEFT JOIN (
-          SELECT id_conta_pagar_receber::text AS id_conta_pagar_receber, SUM(valor_liquidado) AS pago
-          FROM pdv.recebimento_pagamento
-          WHERE _zaya_empresa_id = $1 AND data_hora_deletado IS NULL
-          GROUP BY id_conta_pagar_receber::text
-        ) r ON r.id_conta_pagar_receber = c.id_conta_pagar_receber
-        WHERE c._zaya_empresa_id = $1
-          AND c.data_hora_deletado IS NULL
-          AND ($2::uuid IS NULL OR c._zaya_filial_id = $2)
-          AND c.vencimento::timestamp >= $3::timestamp
-          AND c.vencimento::timestamp < $4::timestamp
-          AND ($5::text IS NULL OR c.nome_cliente ILIKE '%' || $5 || '%')
-          AND ($6::text IS NULL OR c.id_dispositivo = $6)
-      `;
-    }
+    baseQuery = `
+      FROM pdv.conta_pagar_receber c
+      LEFT JOIN pdv.cliente cl ON cl._zaya_empresa_id = c._zaya_empresa_id AND cl.id_cliente = c.id_cliente
+      LEFT JOIN (
+        SELECT id_conta_pagar_receber, SUM(valor_liquidado) AS pago
+        FROM pdv.recebimento_pagamento
+        WHERE _zaya_empresa_id = $1 AND data_hora_deletado IS NULL
+        GROUP BY id_conta_pagar_receber
+      ) r ON r.id_conta_pagar_receber = c.id_conta_pagar_receber
+      WHERE c._zaya_empresa_id = $1
+        AND c.data_hora_deletado IS NULL
+        AND ($2::uuid IS NULL OR c._zaya_filial_id = $2)
+        AND c.positiva_negativa = ${tipo === "receber" ? 1 : 0}
+        AND c.vencimento::timestamp >= $3::timestamp
+        AND c.vencimento::timestamp < $4::timestamp
+        AND ($5::text IS NULL OR cl.nome ILIKE '%' || $5 || '%')
+        AND ($6::text IS NULL OR c._zaya_dispositivo_id::text = $6)
+    `;
 
-    let selectPrefix = "";
-    if (tipo === "receber") {
-      selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.documento, c.nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
-    } else {
-      selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
-    }
+    let selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
     const [totalResult, itensResult] = await Promise.all([
       pool.query(`SELECT count(*)::int AS total ${baseQuery}`, p),
       pool.query(
