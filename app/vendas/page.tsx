@@ -767,6 +767,7 @@ function EstoquePanel({ empresaId, filialId }: { empresaId: string; filialId: st
 
 interface ContaFinanceira {
   id_conta_pagar_receber: string;
+  id_venda?: string;
   tipo_conta: number;
   valor: number;
   emissao?: string;
@@ -774,6 +775,12 @@ interface ContaFinanceira {
   documento: string | null;
   nome_cliente: string | null;
   valor_pago: number;
+}
+
+interface DetalhesVenda {
+  venda: any;
+  itens: any[];
+  pagamentos: any[];
 }
 
 interface ResumoFinanceiro {
@@ -869,6 +876,8 @@ function FinanceiroPanel({
   const porPagina = 25;
 
   const [isNovaContaModalOpen, setIsNovaContaModalOpen] = useState(false);
+  const [detalhesVenda, setDetalhesVenda] = useState<DetalhesVenda | null>(null);
+  const [loadingDetalhes, setLoadingDetalhes] = useState(false);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -916,6 +925,21 @@ function FinanceiroPanel({
       setRefreshKey(r => r + 1);
     } catch (e: any) {
       alert(e.message);
+    }
+  }
+
+  async function fetchDetalhesVenda(idVenda: string) {
+    if (!idVenda) return;
+    setLoadingDetalhes(true);
+    try {
+      const res = await fetch(`/api/vendas/detalhe/${idVenda}?empresa_id=${empresaId}`);
+      if (!res.ok) throw new Error("Erro ao buscar detalhes da venda");
+      const data = await res.json();
+      setDetalhesVenda(data);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoadingDetalhes(false);
     }
   }
 
@@ -1079,8 +1103,15 @@ function FinanceiroPanel({
                 return (
                   <li key={c.id_conta_pagar_receber} className="vendas-fin-item">
                     <div className="vendas-fin-item-info">
-                      <div className="vendas-fin-item-title">
-                        <strong>{c.nome_cliente || c.documento || "Documento sem nome"}</strong>
+                      <div className="vendas-fin-item-title" style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        <strong
+                          style={{ cursor: c.id_venda ? "pointer" : "default", textDecoration: c.id_venda ? "underline" : "none" }}
+                          onClick={() => {
+                            if (c.id_venda) fetchDetalhesVenda(c.id_venda);
+                          }}
+                        >
+                          {c.nome_cliente || c.documento || "Documento sem nome"}
+                        </strong>
                         <span className={`vendas-fin-tag ${
                           st === "Pago" ? "vendas-fin-tag-green"
                           : st === "Pago Parcial" ? "vendas-fin-tag-blue"
@@ -1095,12 +1126,16 @@ function FinanceiroPanel({
                     </div>
                     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       <span className="vendas-fin-item-valor">{formatarMoeda(Number(c.valor))}</span>
-                      {st !== "Pago" && (
-                        <button type="button" className="vendas-btn-text-green" onClick={() => handleAcaoFinanceira(c)}>
-                          {tipo === "receber" ? "Receber" : "Pagar"}
-                        </button>
-                      )}
-                      <button type="button" className="vendas-btn-text-red" onClick={() => handleExcluir(c.id_conta_pagar_receber)}>Excluir</button>
+                      <div className="vendas-fin-acoes">
+                        {tipo === "pagar" && st !== "Pago" && (
+                          <button type="button" className="vendas-btn-text-green" onClick={() => handleAcaoFinanceira(c)}>
+                            Pagar
+                          </button>
+                        )}
+                        {tipo === "pagar" && (
+                          <button type="button" className="vendas-btn-text-red" onClick={() => handleExcluir(c.id_conta_pagar_receber)}>Excluir</button>
+                        )}
+                      </div>
                     </div>
                   </li>
                 );
@@ -1126,6 +1161,40 @@ function FinanceiroPanel({
           empresaId={empresaId}
           onClose={() => setIsNovaContaModalOpen(false)}
         />
+      )}
+      
+      {detalhesVenda && (
+        <div className="vendas-modal-overlay">
+          <div className="vendas-modal-content" style={{ maxWidth: '600px' }}>
+            <h2>Detalhes da Venda #{detalhesVenda.venda.codigo_venda}</h2>
+            
+            <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+              <p><strong>Cliente:</strong> {detalhesVenda.venda.nome_cliente || 'N/A'}</p>
+              <p><strong>Total:</strong> {formatarMoeda(detalhesVenda.venda.total_liquido)}</p>
+              <p><strong>Data:</strong> {new Date(detalhesVenda.venda.data_hora_criado).toLocaleString('pt-BR')}</p>
+            </div>
+
+            <h3>Produtos</h3>
+            <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.5rem', marginBottom: '1rem' }}>
+              {detalhesVenda.itens.map((item: any, idx: number) => (
+                <li key={idx} style={{ padding: '0.5rem', borderBottom: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{item.qtd}x {item.nome_produto}</span>
+                  <strong>{formatarMoeda(item.total_liquido)}</strong>
+                </li>
+              ))}
+            </ul>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1.5rem" }}>
+              <button
+                type="button"
+                className="vendas-btn-secondary"
+                onClick={() => setDetalhesVenda(null)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </section>
   );

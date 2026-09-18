@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
         AND ($6::text IS NULL OR c._zaya_dispositivo_id::text = $6)
     `;
 
-    let selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.data_hora_criado AS emissao, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
+    let selectPrefix = `SELECT c.id_conta_pagar_receber, c.id_venda, c.tipo_conta, c.valor, c.vencimento, c.data_hora_criado AS emissao, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
     const [totalResult, itensResult] = await Promise.all([
       pool.query(`SELECT count(*)::int AS total ${baseQuery}`, p),
       pool.query(
