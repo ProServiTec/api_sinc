@@ -769,6 +769,7 @@ interface ContaFinanceira {
   id_conta_pagar_receber: string;
   tipo_conta: number;
   valor: number;
+  emissao?: string;
   vencimento: string;
   documento: string | null;
   nome_cliente: string | null;
@@ -1078,17 +1079,19 @@ function FinanceiroPanel({
                 return (
                   <li key={c.id_conta_pagar_receber} className="vendas-fin-item">
                     <div className="vendas-fin-item-info">
-                      <span className="vendas-fin-item-nome">
-                        {c.nome_cliente ?? c.documento ?? "—"}
-                      </span>
-                      <span className={`vendas-fin-badge vendas-fin-badge-${
-                        st === "Pago" ? "pago" :
-                        st === "Pago Parcial" ? "parcial" :
-                        st === "Vencida" ? "vencida" : "pendente"
-                      }`}>{st}</span>
-                    </div>
-                    <div className="vendas-fin-item-meta">
-                      <span>Vence: {new Date(c.vencimento).toLocaleDateString("pt-BR")}</span>
+                      <div className="vendas-fin-item-title">
+                        <strong>{c.nome_cliente || c.documento || "Documento sem nome"}</strong>
+                        <span className={`vendas-fin-tag ${
+                          st === "Pago" ? "vendas-fin-tag-green"
+                          : st === "Pago Parcial" ? "vendas-fin-tag-blue"
+                          : st === "Vencida" ? "vendas-fin-tag-red"
+                          : "vendas-fin-tag-amber"
+                        }`}>{st}</span>
+                      </div>
+                      <div className="vendas-fin-item-meta">
+                        {c.emissao && <span style={{ marginRight: "1rem" }}>Emissão: {new Date(c.emissao).toLocaleDateString("pt-BR")}</span>}
+                        <span>Vence: {new Date(c.vencimento).toLocaleDateString("pt-BR")}</span>
+                      </div>
                     </div>
                     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       <span className="vendas-fin-item-valor">{formatarMoeda(Number(c.valor))}</span>

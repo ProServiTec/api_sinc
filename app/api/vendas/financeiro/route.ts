@@ -44,19 +44,19 @@ export async function GET(request: NextRequest) {
         AND c.data_hora_deletado IS NULL
         AND ($2::uuid IS NULL OR c._zaya_filial_id = $2)
         AND c.positiva_negativa = ${tipo === "receber" ? 1 : 0}
-        AND c.vencimento::timestamp >= $3::timestamp
-        AND c.vencimento::timestamp < $4::timestamp
+        AND c.data_hora_criado::timestamp >= $3::timestamp
+        AND c.data_hora_criado::timestamp < $4::timestamp
         AND ($5::text IS NULL OR cl.nome ILIKE '%' || $5 || '%')
         AND ($6::text IS NULL OR c._zaya_dispositivo_id::text = $6)
     `;
 
-    let selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
+    let selectPrefix = `SELECT c.id_conta_pagar_receber, c.tipo_conta, c.valor, c.vencimento, c.data_hora_criado AS emissao, c.documento, cl.nome AS nome_cliente, COALESCE(r.pago, 0) AS valor_pago`;
     const [totalResult, itensResult] = await Promise.all([
       pool.query(`SELECT count(*)::int AS total ${baseQuery}`, p),
       pool.query(
         `${selectPrefix}
          ${baseQuery}
-         ORDER BY c.vencimento ASC
+         ORDER BY c.data_hora_criado ASC
          LIMIT ${porPagina} OFFSET ${(pagina - 1) * porPagina}`,
         p
       ),
