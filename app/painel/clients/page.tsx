@@ -133,7 +133,7 @@ export default function PainelClientes() {
       <div className="clients-busca">
         <input
           type="text"
-          placeholder="Buscar por nome ou CNPJ..."
+          placeholder="Buscar por nome, CNPJ ou email..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
@@ -149,8 +149,6 @@ export default function PainelClientes() {
                 <th>Cliente</th>
                 <th>CNPJ</th>
                 <th>Licenças</th>
-                <th>Máquinas</th>
-                <th>Fatura</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -159,26 +157,36 @@ export default function PainelClientes() {
               {clientesFiltrados.map((c) => (
                 <tr key={c.id}>
                   <td>
-                    <strong>{c.nome}</strong>
+                    {c.token ? (
+                      <Link href={`/painel/clients/${c.token}`} className="clients-nome-link">
+                        {c.nome}
+                      </Link>
+                    ) : (
+                      <strong>{c.nome}</strong>
+                    )}
                     {c.razao_social && <span className="clients-razao">{c.razao_social}</span>}
                   </td>
                   <td>{c.cpf_cnpj ?? "—"}</td>
                   <td>
-                    {c.licencas_ativas}/{c.licencas}
-                  </td>
-                  <td>{c.dispositivos}</td>
-                  <td>
-                    <FaturaBadge status={c.fatura_status} />
+                    <span className="clients-licencas-count">{c.licencas_ativas}/{c.licencas}</span>
+                    <span className="clients-maquinas-hint">{c.dispositivos} máq.</span>
                   </td>
                   <td>
                     <span className={c.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
                       {c.ativo ? "Ativo" : "Inativo"}
                     </span>
                   </td>
-                  <td>
+                  <td className="clients-td-acoes">
                     {c.token && (
-                      <Link href={`/painel/clients/${c.token}`} className="clients-ver-detalhes">
-                        Ver detalhes
+                      <Link
+                        href={`/painel/clients/${c.token}`}
+                        className="clients-btn-olho"
+                        title="Ver detalhes"
+                      >
+                        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                          <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd" />
+                        </svg>
                       </Link>
                     )}
                   </td>

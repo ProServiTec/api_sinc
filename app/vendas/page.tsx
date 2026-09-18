@@ -424,58 +424,84 @@ function VendasListaPanel({
   const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
 
   return (
-    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Vendas ({total})</h2>
+    <section className="vendas-caixa-section">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h2 className="vendas-caixa-title">
+          Vendas{" "}
+          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)", fontWeight: "normal" }}>
+            {total} vendas · {formatarMoeda(vendas.reduce((acc, v) => acc + Number(v.valor_total), 0))}
+          </span>
+        </h2>
+      </div>
+      
       {erro && <p className="vendas-erro">{erro}</p>}
-      <table>
-        <thead>
-          <tr>
-            <th>Nº</th>
-            <th>Data</th>
-            <th>Cliente</th>
-            <th>Itens</th>
-            <th>Dispositivo</th>
-            <th>Total</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && (
-            <tr>
-              <td colSpan={7}>
-                <span className="vendas-atualizar-spinner">
-                  <span className="vendas-spinner vendas-spinner-sm" /> Carregando vendas...
-                </span>
-              </td>
-            </tr>
-          )}
-          {!loading && vendas.length === 0 && (
-            <tr>
-              <td colSpan={7}>Nenhuma venda no período selecionado.</td>
-            </tr>
-          )}
-          {vendas.map((v) => (
-            <tr key={v.id_venda}>
-              <td>{v.codigo_venda}</td>
-              <td>{new Date(v.data_hora_criado).toLocaleString("pt-BR")}</td>
-              <td>{v.nome_cliente ?? "—"}</td>
-              <td>{v.qtd_itens}</td>
-              <td>{v.codigo_dispositivo ? `Dispositivo ${v.codigo_dispositivo}` : v.id_dispositivo.slice(0, 8)}</td>
-              <td>{formatarMoeda(Number(v.valor_total))}</td>
-              <td>{v.cancelada_pelo_usuario === "1" ? "Cancelada" : "Concluída"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      
+      {/* ── Filtros adicionais (Operador, Forma Pgto, Tipo, Dispositivo) ── */}
+      <div className="vendas-filtros" style={{ marginBottom: 0 }}>
+        <select className="vendas-select">
+          <option>Todos operadores</option>
+        </select>
+        <select className="vendas-select">
+          <option>Todas formas pgto</option>
+        </select>
+        <select className="vendas-select">
+          <option>Todos tipos</option>
+        </select>
+        <select className="vendas-select">
+          <option>Todos dispositivos</option>
+        </select>
+      </div>
+
+      <div className="vendas-caixa-bloco">
+        {loading ? (
+          <div className="vendas-caixa-bloco-vazio">
+            <span className="vendas-spinner vendas-spinner-sm" style={{ marginRight: 8 }} />
+            Carregando vendas...
+          </div>
+        ) : vendas.length === 0 ? (
+          <div className="vendas-caixa-bloco-vazio">Nenhuma venda encontrada</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="vendas-caixa-table">
+              <thead>
+                <tr>
+                  <th>Nº</th>
+                  <th>Data</th>
+                  <th>Cliente</th>
+                  <th>Itens</th>
+                  <th>Dispositivo</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vendas.map((v) => (
+                  <tr key={v.id_venda}>
+                    <td>{v.codigo_venda}</td>
+                    <td>{new Date(v.data_hora_criado).toLocaleString("pt-BR")}</td>
+                    <td>{v.nome_cliente ?? "—"}</td>
+                    <td>{v.qtd_itens}</td>
+                    <td>{v.codigo_dispositivo ? `Disp. ${v.codigo_dispositivo}` : v.id_dispositivo.slice(0, 8)}</td>
+                    <td style={{ fontWeight: 600 }}>{formatarMoeda(Number(v.valor_total))}</td>
+                    <td>
+                      <span className={`vendas-fin-badge vendas-fin-badge-${v.cancelada_pelo_usuario === "1" ? "vencida" : "pago"}`}>
+                        {v.cancelada_pelo_usuario === "1" ? "Cancelada" : "Concluída"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="vendas-fin-paginacao" style={{ marginTop: "1rem" }}>
           <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
             Anterior
           </button>
-          <span>
-            Página {pagina} de {totalPaginas}
-          </span>
+          <span>Página {pagina} de {totalPaginas}</span>
           <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
             Próxima
           </button>
@@ -527,53 +553,89 @@ function CaixaPanel({ empresaId, filialId }: { empresaId: string; filialId: stri
 
   const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
 
+  const totaisGerais = caixas.reduce(
+    (acc, c) => {
+      acc.vendido += Number(c.total_vendido);
+      acc.sangrias += Number(c.total_sangrias);
+      acc.suprimentos += Number(c.total_suprimentos);
+      return acc;
+    },
+    { vendido: 0, sangrias: 0, suprimentos: 0 }
+  );
+
   return (
-    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Caixa ({total})</h2>
+    <section className="vendas-caixa-section">
+      <h2 className="vendas-caixa-title">Controle de Caixa</h2>
       {erro && <p className="vendas-erro">{erro}</p>}
-      <table>
-        <thead>
-          <tr>
-            <th>Abertura</th>
-            <th>Fechamento</th>
-            <th>Dispositivo</th>
-            <th>Vendido</th>
-            <th>Sangrias</th>
-            <th>Suprimentos</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && (
-            <tr>
-              <td colSpan={6}>Carregando...</td>
-            </tr>
-          )}
-          {!loading && caixas.length === 0 && (
-            <tr>
-              <td colSpan={6}>Nenhuma sessão de caixa encontrada.</td>
-            </tr>
-          )}
-          {caixas.map((c) => (
-            <tr key={c.id_fechamento_caixa}>
-              <td>{new Date(c.data_abertura).toLocaleString("pt-BR")}</td>
-              <td>{c.data_fechamento ? new Date(c.data_fechamento).toLocaleString("pt-BR") : "Em aberto"}</td>
-              <td>{c.codigo_dispositivo ? `Dispositivo ${c.codigo_dispositivo}` : c.id_dispositivo.slice(0, 8)}</td>
-              <td>{formatarMoeda(Number(c.total_vendido))}</td>
-              <td>{formatarMoeda(Number(c.total_sangrias))}</td>
-              <td>{formatarMoeda(Number(c.total_suprimentos))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {/* Cards de resumo de caixa */}
+      <div className="vendas-caixa-cards">
+        <div className="vendas-caixa-card">
+          <span>Fechamentos</span>
+          <strong>{total}</strong>
+        </div>
+        <div className="vendas-caixa-card">
+          <span>Total Fechado</span>
+          <strong>{formatarMoeda(totaisGerais.vendido)}</strong>
+        </div>
+        <div className="vendas-caixa-card vendas-caixa-card-red">
+          <span>Sangrias</span>
+          <strong>{formatarMoeda(totaisGerais.sangrias)}</strong>
+        </div>
+        <div className="vendas-caixa-card vendas-caixa-card-green">
+          <span>Suprimentos</span>
+          <strong>{formatarMoeda(totaisGerais.suprimentos)}</strong>
+        </div>
+      </div>
+
+      <div className="vendas-caixa-bloco" style={{ marginTop: "1rem" }}>
+        <div className="vendas-caixa-bloco-header">
+          Fechamentos de Caixa — {total} encontrados
+        </div>
+        
+        {loading ? (
+          <div className="vendas-caixa-bloco-vazio">
+            <span className="vendas-spinner vendas-spinner-sm" style={{ marginRight: 8 }} />
+            Carregando fechamentos...
+          </div>
+        ) : caixas.length === 0 ? (
+          <div className="vendas-caixa-bloco-vazio">Nenhuma sessão de caixa encontrada.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="vendas-caixa-table">
+              <thead>
+                <tr>
+                  <th>Abertura</th>
+                  <th>Fechamento</th>
+                  <th>Dispositivo</th>
+                  <th>Vendido</th>
+                  <th>Sangrias</th>
+                  <th>Suprimentos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {caixas.map((c) => (
+                  <tr key={c.id_fechamento_caixa}>
+                    <td>{new Date(c.data_abertura).toLocaleString("pt-BR")}</td>
+                    <td>{c.data_fechamento ? new Date(c.data_fechamento).toLocaleString("pt-BR") : "Em aberto"}</td>
+                    <td>{c.codigo_dispositivo ? `Disp. ${c.codigo_dispositivo}` : c.id_dispositivo.slice(0, 8)}</td>
+                    <td style={{ fontWeight: 600 }}>{formatarMoeda(Number(c.total_vendido))}</td>
+                    <td style={{ color: "var(--red)" }}>{formatarMoeda(Number(c.total_sangrias))}</td>
+                    <td style={{ color: "var(--green)" }}>{formatarMoeda(Number(c.total_suprimentos))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <div className="vendas-fin-paginacao">
           <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
             Anterior
           </button>
-          <span>
-            Página {pagina} de {totalPaginas}
-          </span>
+          <span>Página {pagina} de {totalPaginas}</span>
           <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
             Próxima
           </button>
@@ -754,11 +816,48 @@ function exportarCsv(contas: ContaFinanceira[], tipo: "receber" | "pagar") {
   URL.revokeObjectURL(url);
 }
 
-function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId: string | null }) {
+function FinanceiroPanel({
+  empresaId,
+  filialId,
+  filtros,
+  setFiltros,
+  dispositivos,
+}: {
+  empresaId: string;
+  filialId: string | null;
+  filtros: Filtros;
+  setFiltros: (f: Filtros) => void;
+  dispositivos: { id_dispositivo: string; label: string }[];
+}) {
   const [tipo, setTipo] = useState<"receber" | "pagar">("receber");
-  const agora = new Date();
-  const [mes, setMes] = useState(agora.getUTCMonth() + 1);
-  const [ano, setAno] = useState(agora.getUTCFullYear());
+  const fallback = new Date();
+  const dateFromFiltros = filtros.de ? new Date(filtros.de + "T12:00:00Z") : fallback;
+  const mes = dateFromFiltros.getUTCMonth() + 1;
+  const ano = dateFromFiltros.getUTCFullYear();
+  const dispositivoId = filtros.dispositivo || "";
+
+  function handleSetMes(novoMes: number) {
+    const start = new Date(Date.UTC(ano, novoMes - 1, 1));
+    const end = new Date(Date.UTC(ano, novoMes, 0));
+    setFiltros({
+      ...filtros,
+      periodo: "custom",
+      de: start.toISOString().split("T")[0],
+      ate: end.toISOString().split("T")[0],
+    });
+  }
+
+  function handleSetAno(novoAno: number) {
+    const start = new Date(Date.UTC(novoAno, mes - 1, 1));
+    const end = new Date(Date.UTC(novoAno, mes, 0));
+    setFiltros({
+      ...filtros,
+      periodo: "custom",
+      de: start.toISOString().split("T")[0],
+      ate: end.toISOString().split("T")[0],
+    });
+  }
+
   const [buscaCliente, setBuscaCliente] = useState("");
   const [contas, setContas] = useState<ContaFinanceira[]>([]);
   const [resumo, setResumo] = useState<ResumoFinanceiro | null>(null);
@@ -768,9 +867,13 @@ function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId:
   const [erro, setErro] = useState<string | null>(null);
   const porPagina = 25;
 
+  const [isNovaContaModalOpen, setIsNovaContaModalOpen] = useState(false);
+
+  const [refreshKey, setRefreshKey] = useState(0);
+
   useEffect(() => {
     setPagina(1);
-  }, [empresaId, filialId, tipo, mes, ano, buscaCliente]);
+  }, [empresaId, filialId, tipo, mes, ano, buscaCliente, dispositivoId]);
 
   useEffect(() => {
     setLoading(true);
@@ -785,6 +888,7 @@ function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId:
     });
     if (filialId) qs.set("filial_id", filialId);
     if (buscaCliente) qs.set("busca_cliente", buscaCliente);
+    if (dispositivoId) qs.set("dispositivo_id", dispositivoId);
 
     fetch(`/api/vendas/financeiro?${qs.toString()}`)
       .then(async (r) => {
@@ -796,96 +900,155 @@ function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId:
       })
       .catch((err) => setErro(err instanceof Error ? err.message : "Erro ao carregar financeiro"))
       .finally(() => setLoading(false));
-  }, [empresaId, filialId, tipo, mes, ano, buscaCliente, pagina]);
+  }, [empresaId, filialId, tipo, mes, ano, buscaCliente, dispositivoId, pagina, isNovaContaModalOpen, refreshKey]);
+
+  async function handleAcaoFinanceira(conta: ContaFinanceira) {
+    const acaoTexto = tipo === "receber" ? "recebimento" : "pagamento";
+    if (!confirm(`Confirmar o ${acaoTexto} integral desta conta?`)) return;
+    try {
+      const res = await fetch(`/api/vendas/financeiro/${conta.id_conta_pagar_receber}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "pagar", empresa_id: empresaId, valor: conta.valor }),
+      });
+      if (!res.ok) throw new Error(`Erro ao confirmar ${acaoTexto}`);
+      setRefreshKey(r => r + 1);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
+
+  async function handleExcluir(id: string) {
+    if (!confirm("Deseja realmente excluir esta conta?")) return;
+    try {
+      const res = await fetch(`/api/vendas/financeiro/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Erro ao excluir conta");
+      setRefreshKey(r => r + 1);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
 
   const totalPaginas = Math.max(1, Math.ceil(total / porPagina));
 
   return (
-    <section className="vendas-filtros" style={{ flexDirection: "column", alignItems: "stretch", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: 8 }}>
+    <section className="vendas-fin-section">
+      {/* ── Topo: tabs + ação ── */}
+      <div className="vendas-fin-topo">
+        <div className="vendas-fin-tabs">
           <button
             type="button"
-            className={`vendas-preset${tipo === "receber" ? " vendas-preset-ativo" : ""}`}
+            className={`vendas-fin-tab${tipo === "receber" ? " vendas-fin-tab-ativa" : ""}`}
             onClick={() => setTipo("receber")}
           >
             A Receber
           </button>
           <button
             type="button"
-            className={`vendas-preset${tipo === "pagar" ? " vendas-preset-ativo" : ""}`}
+            className={`vendas-fin-tab${tipo === "pagar" ? " vendas-fin-tab-ativa vendas-fin-tab-pagar" : ""}`}
             onClick={() => setTipo("pagar")}
           >
             A Pagar
           </button>
         </div>
-        <button type="button" onClick={() => exportarCsv(contas, tipo)} disabled={contas.length === 0}>
-          Exportar CSV
-        </button>
+        {tipo === "pagar" && (
+          <button
+            type="button"
+            className="vendas-fin-nova-conta"
+            onClick={() => setIsNovaContaModalOpen(true)}
+          >
+            + Nova Conta
+          </button>
+        )}
       </div>
 
+      {/* ── Cards de resumo ── */}
       {resumo && (
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div className="vendas-fin-cards">
           {tipo === "receber" ? (
             <>
-              <div className="vendas-financeiro-card">
+              <div className="vendas-fin-card vendas-fin-card-amber">
                 <span>Pendente</span>
                 <strong>{formatarMoeda(resumo.pendente)}</strong>
               </div>
-              <div className="vendas-financeiro-card">
+              <div className="vendas-fin-card vendas-fin-card-blue">
                 <span>Pago Parcial</span>
                 <strong>{formatarMoeda(resumo.pago_parcial)}</strong>
               </div>
-              <div className="vendas-financeiro-card vendas-financeiro-card-alerta">
+              <div className="vendas-fin-card vendas-fin-card-red">
                 <span>Vencidos</span>
                 <strong>{formatarMoeda(resumo.vencidos)}</strong>
               </div>
-              <div className="vendas-financeiro-card vendas-financeiro-card-ok">
+              <div className="vendas-fin-card vendas-fin-card-green">
                 <span>Recebidos</span>
                 <strong>{formatarMoeda(resumo.pagos)}</strong>
               </div>
             </>
           ) : (
             <>
-              <div className="vendas-financeiro-card vendas-financeiro-card-ok">
+              <div className="vendas-fin-card vendas-fin-card-neutral">
+                <span>Total do mês</span>
+                <strong>{formatarMoeda(resumo.total)}</strong>
+              </div>
+              <div className="vendas-fin-card vendas-fin-card-green">
                 <span>Pagas</span>
                 <strong>{formatarMoeda(resumo.pagos)}</strong>
               </div>
-              <div className="vendas-financeiro-card">
+              <div className="vendas-fin-card vendas-fin-card-red">
                 <span>Pendentes</span>
                 <strong>{formatarMoeda(resumo.pendente)}</strong>
               </div>
-              <div className="vendas-financeiro-card vendas-financeiro-card-alerta">
+              <div className="vendas-fin-card vendas-fin-card-amber">
                 <span>Vencidas</span>
                 <strong>{formatarMoeda(resumo.vencidos)}</strong>
               </div>
             </>
           )}
-          <div className="vendas-financeiro-card">
-            <span>Total</span>
-            <strong>{formatarMoeda(resumo.total)}</strong>
-          </div>
+          {tipo === "receber" && (
+            <div className="vendas-fin-card vendas-fin-card-total">
+              <span>Total</span>
+              <strong>{formatarMoeda(resumo.total)}</strong>
+            </div>
+          )}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+      {/* ── Filtros ── */}
+      <div className="vendas-fin-filtros">
         <input
           type="text"
+          className="vendas-fin-busca"
           placeholder="Buscar cliente..."
           value={buscaCliente}
           onChange={(e) => setBuscaCliente(e.target.value)}
         />
-        <select value={mes} onChange={(e) => setMes(Number(e.target.value))}>
+        <select
+          className="vendas-select"
+          value={mes}
+          onChange={(e) => handleSetMes(Number(e.target.value))}
+        >
           {MESES.map((nome, i) => (
-            <option key={nome} value={i + 1}>
-              {nome}
-            </option>
+            <option key={nome} value={i + 1}>{nome}</option>
           ))}
         </select>
-        <select value={ano} onChange={(e) => setAno(Number(e.target.value))}>
+        <select
+          className="vendas-select"
+          value={ano}
+          onChange={(e) => handleSetAno(Number(e.target.value))}
+        >
           {[ano - 1, ano, ano + 1].map((a) => (
-            <option key={a} value={a}>
-              {a}
+            <option key={a} value={a}>{a}</option>
+          ))}
+        </select>
+        <select
+          className="vendas-select"
+          value={dispositivoId}
+          onChange={(e) => setFiltros({ ...filtros, dispositivo: e.target.value })}
+        >
+          <option value="">Todos os dispositivos</option>
+          {dispositivos.map((d) => (
+            <option key={d.id_dispositivo} value={d.id_dispositivo}>
+              {d.label}
             </option>
           ))}
         </select>
@@ -893,55 +1056,210 @@ function FinanceiroPanel({ empresaId, filialId }: { empresaId: string; filialId:
 
       {erro && <p className="vendas-erro">{erro}</p>}
 
-      <table>
-        <thead>
-          <tr>
-            <th>Cliente/Documento</th>
-            <th>Valor</th>
-            <th>Pago</th>
-            <th>Vencimento</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading && (
-            <tr>
-              <td colSpan={5}>Carregando...</td>
-            </tr>
-          )}
-          {!loading && contas.length === 0 && (
-            <tr>
-              <td colSpan={5}>Nenhuma conta {tipo === "receber" ? "a receber" : "a pagar"} no período.</td>
-            </tr>
-          )}
-          {contas.map((c) => (
-            <tr key={c.id_conta_pagar_receber}>
-              <td>{c.nome_cliente ?? c.documento ?? "—"}</td>
-              <td>{formatarMoeda(Number(c.valor))}</td>
-              <td>{formatarMoeda(Number(c.valor_pago))}</td>
-              <td>{new Date(c.vencimento).toLocaleDateString("pt-BR")}</td>
-              <td>{statusConta(c)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* ── Lista de contas ── */}
+      <div className="vendas-fin-lista-wrap">
+        <div className="vendas-fin-lista-col">
+          <div className="vendas-fin-lista-header">
+            <span>
+              Contas {tipo === "receber" ? "a Receber" : "a Pagar"} ({total})
+            </span>
+          </div>
 
-      {totalPaginas > 1 && (
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
-            Anterior
-          </button>
-          <span>
-            Página {pagina} de {totalPaginas}
-          </span>
-          <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
-            Próxima
-          </button>
+          {loading ? (
+            <div className="vendas-fin-vazio">Carregando...</div>
+          ) : contas.length === 0 ? (
+            <div className="vendas-fin-vazio">
+              Nenhuma conta {tipo === "receber" ? "a receber" : "a pagar"} no período.
+            </div>
+          ) : (
+            <ul className="vendas-fin-lista">
+              {contas.map((c) => {
+                const st = statusConta(c);
+                return (
+                  <li key={c.id_conta_pagar_receber} className="vendas-fin-item">
+                    <div className="vendas-fin-item-info">
+                      <span className="vendas-fin-item-nome">
+                        {c.nome_cliente ?? c.documento ?? "—"}
+                      </span>
+                      <span className={`vendas-fin-badge vendas-fin-badge-${
+                        st === "Pago" ? "pago" :
+                        st === "Pago Parcial" ? "parcial" :
+                        st === "Vencida" ? "vencida" : "pendente"
+                      }`}>{st}</span>
+                    </div>
+                    <div className="vendas-fin-item-meta">
+                      <span>Vence: {new Date(c.vencimento).toLocaleDateString("pt-BR")}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      <span className="vendas-fin-item-valor">{formatarMoeda(Number(c.valor))}</span>
+                      {st !== "Pago" && (
+                        <button type="button" className="vendas-btn-text-green" onClick={() => handleAcaoFinanceira(c)}>
+                          {tipo === "receber" ? "Receber" : "Pagar"}
+                        </button>
+                      )}
+                      <button type="button" className="vendas-btn-text-red" onClick={() => handleExcluir(c.id_conta_pagar_receber)}>Excluir</button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {totalPaginas > 1 && (
+            <div className="vendas-fin-paginacao">
+              <button type="button" disabled={pagina <= 1} onClick={() => setPagina((p) => p - 1)}>
+                Anterior
+              </button>
+              <span>Página {pagina} de {totalPaginas}</span>
+              <button type="button" disabled={pagina >= totalPaginas} onClick={() => setPagina((p) => p + 1)}>
+                Próxima
+              </button>
+            </div>
+          )}
         </div>
+      </div>
+      {isNovaContaModalOpen && (
+        <NovaContaModal
+          empresaId={empresaId}
+          onClose={() => setIsNovaContaModalOpen(false)}
+        />
       )}
     </section>
   );
 }
+
+function NovaContaModal({ empresaId, onClose }: { empresaId: string; onClose: () => void }) {
+  const [loading, setLoading] = useState(false);
+  const [descricao, setDescricao] = useState("");
+  const [valor, setValor] = useState("");
+  const [vencimento, setVencimento] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [observacao, setObservacao] = useState("");
+  const [jaEstaPago, setJaEstaPago] = useState(false);
+  const [repetirMes, setRepetirMes] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/vendas/financeiro", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          empresa_id: empresaId,
+          descricao,
+          valor: Number(valor.replace(",", ".")),
+          vencimento,
+          categoria,
+          observacao,
+          pago: jaEstaPago,
+          repetir_mes: repetirMes
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Erro ao salvar conta");
+      }
+      onClose();
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="vendas-modal-overlay">
+      <div className="vendas-modal-nova-conta">
+        <h2>Nova Conta a Pagar</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="vendas-form-group" style={{ marginBottom: "1rem" }}>
+            <label>Descrição</label>
+            <input
+              type="text"
+              required
+              className="vendas-form-input"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+            />
+          </div>
+          
+          <div className="vendas-form-row">
+            <div className="vendas-form-group">
+              <label>Valor</label>
+              <input
+                type="number"
+                step="0.01"
+                required
+                className="vendas-form-input"
+                value={valor}
+                onChange={(e) => setValor(e.target.value)}
+              />
+            </div>
+            <div className="vendas-form-group">
+              <label>Vencimento</label>
+              <input
+                type="date"
+                required
+                className="vendas-form-input"
+                value={vencimento}
+                onChange={(e) => setVencimento(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="vendas-form-row">
+            <div className="vendas-form-group" style={{ flex: 1 }}>
+              <label>Categoria</label>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <select className="vendas-form-input" value={categoria} onChange={(e) => setCategoria(e.target.value)} style={{ flex: 1 }}>
+                  <option value="">Sem categoria</option>
+                  <option value="impostos">Impostos</option>
+                  <option value="fornecedores">Fornecedores</option>
+                  <option value="funcionarios">Funcionários</option>
+                  <option value="outros">Outros</option>
+                </select>
+                <button type="button" className="vendas-btn-outline-brand" style={{ padding: "0 0.85rem", fontSize: "1.2rem" }}>+</button>
+              </div>
+            </div>
+            <div className="vendas-form-group" style={{ flex: 1 }}>
+              <label>Observação</label>
+              <input
+                type="text"
+                className="vendas-form-input"
+                value={observacao}
+                onChange={(e) => setObservacao(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="vendas-form-check">
+            <label>
+              <input type="checkbox" checked={jaEstaPago} onChange={(e) => setJaEstaPago(e.target.checked)} />
+              Já está pago
+            </label>
+          </div>
+          <div className="vendas-form-check">
+            <label>
+              <input type="checkbox" checked={repetirMes} onChange={(e) => setRepetirMes(e.target.checked)} />
+              Repetir todo mês (12x)
+            </label>
+          </div>
+
+          <div className="vendas-modal-actions" style={{ display: "flex", gap: "1rem", justifyContent: "flex-start", marginTop: "1.5rem" }}>
+            <button type="submit" className="vendas-btn-brand" disabled={loading} style={{ flex: 1 }}>
+              {loading ? "Salvando..." : "Salvar"}
+            </button>
+            <button type="button" className="vendas-btn-cancelar" onClick={onClose} disabled={loading} style={{ background: "transparent", color: "#666", fontWeight: 600 }}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 
 const TAMANHOS_ETIQUETA = [
   { id: "gondola_100x30", label: "Gôndola 100x30mm", larguraMm: 100, alturaMm: 30 },
@@ -1328,11 +1646,23 @@ export default function Vendas() {
   return (
     <div className="vendas-container">
       <header className="vendas-topbar">
+        {/* Logo Zaya compacto */}
+        <div className="vendas-topbar-logo">
+          <div className="vendas-topbar-logo-icon">
+            <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
+              <text x="1" y="17" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="16" fill="white">Z</text>
+              <text x="14" y="10" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="10" fill="#2196F3">+</text>
+            </svg>
+          </div>
+          <span className="vendas-topbar-logo-name">Zaya Vendas</span>
+        </div>
+
+        {/* Empresa + CNPJ */}
         <div className="vendas-topbar-empresa">
           {empresa && (
             <>
               <strong>{empresa.nome}</strong>
-              {empresa.cpf_cnpj && <span>{empresa.cpf_cnpj}</span>}
+              {empresa.cpf_cnpj && <span>— {empresa.cpf_cnpj}</span>}
             </>
           )}
         </div>
@@ -1367,8 +1697,10 @@ export default function Vendas() {
 
         {empresa && (
           <div className="vendas-topbar-user">
-            <div className="vendas-avatar">{empresa.nome.charAt(0).toUpperCase()}</div>
-            <span>{empresa.nome}</span>
+            <div className="vendas-avatar" title={empresa.nome}>
+              {empresa.nome.charAt(0).toUpperCase()}
+            </div>
+            <span>{usuario ? usuario.nome : empresa.nome}</span>
             <button className="vendas-sair" onClick={sair}>
               Sair
             </button>
@@ -1434,7 +1766,7 @@ export default function Vendas() {
         )}
         {aba === "caixa" && empresa && <CaixaPanel empresaId={empresa.id} filialId={filialAtiva} />}
         {aba === "estoque" && empresa && <EstoquePanel empresaId={empresa.id} filialId={filialAtiva} />}
-        {aba === "financeiro" && empresa && <FinanceiroPanel empresaId={empresa.id} filialId={filialAtiva} />}
+        {aba === "financeiro" && empresa && <FinanceiroPanel empresaId={empresa.id} filialId={filialAtiva} filtros={filtros} setFiltros={setFiltros} dispositivos={resumo?.dispositivos || []} />}
         {aba === "etiquetas" && empresa && <EtiquetasPanel empresaId={empresa.id} filialId={filialAtiva} />}
 
         {aba === "dashboard" && (
@@ -1536,7 +1868,7 @@ export default function Vendas() {
               </div>
               <div className="vendas-card">
                 <span className="vendas-card-label">Margem Bruta</span>
-                <strong className="vendas-card-value">{formatarMoeda(resumo.resumo.margem_bruta)}</strong>
+                <strong className="vendas-card-value vendas-card-value-green">{formatarMoeda(resumo.resumo.margem_bruta)}</strong>
                 <span className="vendas-card-hint">
                   {resumo.resumo.margem_percentual !== null
                     ? `${resumo.resumo.margem_percentual.toFixed(1)}% da receita`

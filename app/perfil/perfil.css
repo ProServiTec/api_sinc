@@ -1,0 +1,160 @@
+/* ============================================================
+   PERFIL — Identidade Zaya Sistemas
+   ============================================================ */
+
+.perfil-section {
+  margin-top: 1.5rem;
+  padding: 1.75rem 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  max-width: 640px;
+}
+
+.perfil-section h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Campos ───────────────────────────────────────────────── */
+
+.perfil-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.perfil-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.perfil-field label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.perfil-field input,
+.perfil-field textarea {
+  padding: 0.7rem 0.85rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  background: var(--surface);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.perfil-field input:focus,
+.perfil-field textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.18);
+}
+
+.perfil-field input:read-only {
+  background: var(--bg);
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+.perfil-field-hint {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Row de dois campos ───────────────────────────────────── */
+
+.perfil-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* ── Cor principal ────────────────────────────────────────── */
+
+.perfil-cor-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.perfil-cor-preview {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.perfil-cor-input-text {
+  flex: 1;
+}
+
+.perfil-cor-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--brand);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.perfil-cor-btn:hover {
+  background: var(--brand-hover);
+}
+
+/* ── Botão Salvar ─────────────────────────────────────────── */
+
+.perfil-salvar-btn {
+  align-self: flex-start;
+  padding: 0.65rem 1.75rem;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.perfil-salvar-btn:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+
+.perfil-salvar-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Mensagens ────────────────────────────────────────────── */
+
+.perfil-sucesso {
+  font-size: 0.88rem;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.perfil-erro {
+  font-size: 0.88rem;
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* ── Divisor entre seções ─────────────────────────────────── */
+
+.perfil-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2rem 0 0;
+}

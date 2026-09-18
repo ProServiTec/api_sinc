@@ -1,5 +1,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
+:root {
+  /* Zaya Sistemas — paleta oficial */
+  --brand:           #2196F3;   /* azul elétrico (sinal de +) */
+  --brand-dark:      #0D1B2A;   /* azul marinho profundo (corpo do Z) */
+  --brand-hover:     #1976D2;   /* hover de botões / links */
+  --bg:              #F0F4F8;   /* fundo cinza-azulado oficial do Zaya Sistemas (como no admin) */
+  --surface:         #FFFFFF;   /* cards e painéis brancos puros */
+  --border:          #E2E8F0;   /* bordas suaves e elegantes */
+  --text-primary:    #0D1B2A;   /* títulos */
+  --text-secondary:  #64748B;   /* labels e hints */
+  --green:           #1E9E5A;   /* status ativo / em dia */
+  --red:             #E53935;   /* alertas / vencido */
+  --amber:           #B45309;   /* pendente */
+}
+
 * {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;
@@ -7,6 +22,6 @@
   font-style: normal;
   border: none;
   box-sizing: border-box;
-  padding: none;
-  margin: none;
+  padding: 0;
+  margin: 0;
 }

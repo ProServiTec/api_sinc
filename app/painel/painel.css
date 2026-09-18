@@ -1,13 +1,16 @@
-.painel-container {
-  --brand: #3956e8;
-  --bg: #f5f6fa;
+/* ============================================================
+   PAINEL — Layout e componentes (Identidade Zaya Sistemas)
+   ============================================================ */
 
+.painel-container {
   display: flex;
   min-height: 100vh;
   background: var(--bg);
 }
 
-/* Sidebar */
+/* ══════════════════════════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════════════════════════ */
 
 .painel-sidebar {
   display: flex;
@@ -18,57 +21,119 @@
   width: 240px;
   height: 100vh;
   flex-shrink: 0;
-  padding: 1.5rem 1rem;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--brand-dark);
   overflow-y: auto;
 }
+
+/* ── Logo ──────────────────────────────────────────────── */
+
+.painel-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1.5rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.5rem;
+}
+
+.painel-logo-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: rgba(33, 150, 243, 0.18);
+  border: 1.5px solid rgba(33, 150, 243, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.painel-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.painel-logo-text strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.painel-logo-text span {
+  font-size: 0.68rem;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* ── Nav ───────────────────────────────────────────────── */
 
 .painel-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .painel-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: 8px;
-  font-size: 0.9rem;
-  color: #555;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
   text-decoration: none;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s;
 }
 
 .painel-nav-item:hover {
-  background: #f5f6fa;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .painel-nav-item-disabled {
-  color: #9aa1b0;
+  color: rgba(255, 255, 255, 0.28);
   cursor: not-allowed;
 }
 
 .painel-nav-item-disabled:hover {
   background: none;
+  color: rgba(255, 255, 255, 0.28);
 }
 
 .painel-nav-item-active {
-  background: rgba(57, 86, 232, 0.1);
+  background: rgba(33, 150, 243, 0.18);
   color: var(--brand);
   font-weight: 600;
+  border-left: 3px solid var(--brand);
+  padding-left: calc(0.85rem - 3px);
 }
 
 .painel-nav-item-active:hover {
-  background: rgba(57, 86, 232, 0.1);
+  background: rgba(33, 150, 243, 0.22);
+  color: var(--brand);
 }
+
+.painel-nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+/* ── Rodapé da sidebar (user info) ─────────────────────── */
 
 .painel-sidebar-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   text-align: center;
 }
 
@@ -79,67 +144,104 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(57, 86, 232, 0.12);
+  background: rgba(33, 150, 243, 0.2);
+  border: 1.5px solid rgba(33, 150, 243, 0.4);
   color: var(--brand);
   font-weight: 700;
+  font-size: 1rem;
 }
 
 .painel-sidebar-empresa {
-  font-size: 0.85rem;
-  color: #333;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 500;
+}
+
+.painel-sidebar-empresa strong {
+  display: block;
+  color: #fff;
+  font-weight: 600;
 }
 
 .painel-sair {
   margin-top: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.75rem;
   width: 100%;
-  border: none;
   border-radius: 6px;
-  background: rgba(192, 57, 43, 0.1);
-  color: #c0392b;
-  font-size: 0.85rem;
+  background: rgba(229, 57, 53, 0.15);
+  color: #ff8a80;
+  font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .painel-sair:hover {
-  background: rgba(192, 57, 43, 0.18);
+  background: rgba(229, 57, 53, 0.28);
 }
 
-/* Main */
+/* ══════════════════════════════════════════════════════════
+   CONTEÚDO PRINCIPAL
+   ══════════════════════════════════════════════════════════ */
 
 .painel-main {
   flex: 1;
   padding: 2rem 2.5rem;
+  min-width: 0;
 }
 
 .painel-header h1 {
   margin: 0;
-  font-size: 1.5rem;
-  color: #1a1a2e;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .painel-header p {
-  margin: 0.25rem 0 0;
-  color: #666;
+  margin: 0.3rem 0 0;
+  color: var(--text-secondary);
   font-size: 0.95rem;
+  font-weight: 400;
 }
+
+/* ── Loading / Error ────────────────────────────────────── */
 
 .painel-loading,
 .painel-error {
   margin-top: 1.5rem;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .painel-error {
-  color: #c0392b;
+  color: var(--red);
 }
 
-/* Stat cards */
+/* ── Banner "Tudo em dia" ───────────────────────────────── */
+
+.painel-banner-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.25rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  background: rgba(30, 158, 90, 0.1);
+  border: 1px solid rgba(30, 158, 90, 0.25);
+  color: var(--green);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.painel-banner-ok svg {
+  flex-shrink: 0;
+}
+
+/* ── Stat cards ─────────────────────────────────────────── */
 
 .painel-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1.25rem;
   margin-top: 1.75rem;
 }
@@ -149,32 +251,44 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 1.25rem 1.5rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .painel-card-label {
-  font-size: 0.85rem;
-  color: #888;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .painel-card-value {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: #1a1a2e;
+  color: var(--text-primary);
+  line-height: 1;
+  margin-top: 0.15rem;
 }
 
 .painel-card-value-blue {
   color: var(--brand);
 }
 
-.painel-card-hint {
-  font-size: 0.8rem;
-  color: #999;
+.painel-card-value-muted {
+  color: var(--text-secondary);
 }
 
-/* Alerts */
+.painel-card-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  margin-top: 0.1rem;
+}
+
+/* ── Alertas (vencida / pendente) ───────────────────────── */
 
 .painel-alerta {
   display: flex;
@@ -185,6 +299,7 @@
   padding: 1rem 1.25rem;
   border-radius: 10px;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .painel-alerta p {
@@ -193,34 +308,57 @@
 }
 
 .painel-alerta-vencida {
-  background: #fdecea;
-  color: #c0392b;
+  background: rgba(229, 57, 53, 0.08);
+  border: 1px solid rgba(229, 57, 53, 0.25);
+  color: var(--red);
 }
 
 .painel-alerta-pendente {
-  background: #fef6e0;
-  color: #a9720c;
+  background: rgba(180, 83, 9, 0.08);
+  border: 1px solid rgba(180, 83, 9, 0.25);
+  color: var(--amber);
 }
 
-/* Clientes recentes */
+/* ── Clientes recentes ──────────────────────────────────── */
 
 .painel-clientes {
   margin-top: 1.75rem;
   padding: 1.5rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.painel-clientes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
 .painel-clientes-header h2 {
-  margin: 0 0 1rem;
-  font-size: 1.05rem;
-  color: #1a1a2e;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.painel-clientes-ver-todos {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--brand);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.painel-clientes-ver-todos:hover {
+  text-decoration: underline;
 }
 
 .painel-vazio {
   margin: 0;
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -238,8 +376,9 @@
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #f0f2f5;
   font-size: 0.9rem;
+  color: var(--text-primary);
 }
 
 .painel-cliente-item:last-child {
@@ -248,29 +387,57 @@
 
 .painel-cliente-doc {
   display: block;
-  color: #888;
-  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 400;
 }
 
 .painel-cliente-meta {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  color: #666;
-  font-size: 0.85rem;
+  gap: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
 }
 
 .painel-badge-ativo {
-  color: #1e9e5a;
+  color: var(--green);
   font-weight: 600;
 }
 
 .painel-badge-inativo {
-  color: #999;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
-/* Licenças (comprar / atribuir) */
+/* ── Cards/itens clicáveis ──────────────────────────────── */
+
+.painel-card-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+
+.painel-card-link:hover {
+  border-color: var(--brand);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.12);
+  transform: translateY(-1px);
+}
+
+.painel-cliente-item-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.painel-cliente-item-link:hover {
+  background: rgba(33, 150, 243, 0.04);
+}
+
+/* ══════════════════════════════════════════════════════════
+   LICENÇAS (comprar / atribuir)
+   ══════════════════════════════════════════════════════════ */
 
 .licencas-catalogo {
   display: grid;
@@ -281,18 +448,20 @@
 
 .licencas-catalogo-card {
   padding: 1.25rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .licencas-catalogo-card h3 {
   margin: 0;
   font-size: 1rem;
-  color: #1a1a2e;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .licencas-catalogo-valor {
@@ -302,33 +471,33 @@
 }
 
 .licencas-catalogo-meta {
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
 .licencas-comprar-btn {
   margin-top: 0.5rem;
   padding: 0.6rem;
-  border: none;
   border-radius: 8px;
   background: var(--brand);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .licencas-comprar-btn:hover {
-  background: #2d46c9;
+  background: var(--brand-hover);
 }
 
 .painel-status-estoque {
-  color: #1e9e5a;
+  color: var(--green);
   font-weight: 600;
 }
 
 .painel-status-atribuida {
-  color: #3956e8;
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -345,17 +514,17 @@
 
 .clients-licencas-plano-select {
   padding: 0.55rem 0.7rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 0.85rem;
-  background: #fff;
+  background: var(--surface);
 }
 
 .clients-licenca-remover-btn {
   border: none;
   background: none;
   padding: 0;
-  color: #c0392b;
+  color: var(--red);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -364,28 +533,4 @@
 
 .clients-licenca-remover-btn:hover {
   text-decoration: underline;
-}
-
-/* Cards e itens clicáveis na Visão Geral */
-
-.painel-card-link {
-  text-decoration: none;
-  color: inherit;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-
-.painel-card-link:hover {
-  border-color: var(--brand);
-  box-shadow: 0 2px 8px rgba(57, 86, 232, 0.08);
-}
-
-.painel-cliente-item-link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.painel-cliente-item-link:hover {
-  background: rgba(57, 86, 232, 0.04);
 }

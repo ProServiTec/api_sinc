@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import "./painel.css";
+import "../painel/painel.css";
 
 interface EmpresaSessao {
   id: string;
@@ -12,7 +12,6 @@ interface EmpresaSessao {
   is_master: boolean;
 }
 
-// Ícones SVG inline para cada item da nav
 const ICONS: Record<string, React.ReactNode> = {
   "Visão Geral": (
     <svg className="painel-nav-icon" viewBox="0 0 20 20" fill="currentColor">
@@ -49,7 +48,7 @@ const NAV_ITEMS = [
   { label: "Meu Perfil", href: "/perfil" },
 ];
 
-export default function PainelLayout({ children }: { children: React.ReactNode }) {
+export default function PerfilLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [empresa, setEmpresa] = useState<EmpresaSessao | null>(null);
@@ -67,20 +66,10 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
     if (!pronto) return;
     if (!empresa) {
       router.replace("/login");
-      return;
-    }
-    if (empresa.is_master) {
-      router.replace("/master");
-      return;
-    }
-    if (!empresa.is_admin) {
-      router.replace("/vendas");
     }
   }, [pronto, empresa, router]);
 
-  if (!pronto || !empresa || empresa.is_master || !empresa.is_admin) {
-    return null;
-  }
+  if (!pronto || !empresa) return null;
 
   function sair() {
     sessionStorage.removeItem("empresa");
@@ -90,7 +79,6 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
   return (
     <div className="painel-container">
       <aside className="painel-sidebar">
-        {/* Logo Zaya Sistemas */}
         <div>
           <div className="painel-logo">
             <div className="painel-logo-icon">
@@ -126,17 +114,15 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
           </nav>
         </div>
 
-        {empresa && (
-          <div className="painel-sidebar-footer">
-            <div className="painel-avatar">{empresa.nome.charAt(0).toUpperCase()}</div>
-            <div className="painel-sidebar-empresa">
-              <strong>{empresa.nome}</strong>
-            </div>
-            <button className="painel-sair" onClick={sair}>
-              Sair da conta
-            </button>
+        <div className="painel-sidebar-footer">
+          <div className="painel-avatar">{empresa.nome.charAt(0).toUpperCase()}</div>
+          <div className="painel-sidebar-empresa">
+            <strong>{empresa.nome}</strong>
           </div>
-        )}
+          <button className="painel-sair" onClick={sair}>
+            Sair da conta
+          </button>
+        </div>
       </aside>
 
       <main className="painel-main">{children}</main>

@@ -79,6 +79,19 @@ export default function Painel() {
 
       {resumo && (
         <>
+          {/* Banner "Tudo em dia" — exibido quando não há pendências */}
+          {resumo.titulos.vencidos_count === 0 && resumo.titulos.pendentes_count === 0 && (
+            <div className="painel-banner-ok">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>
+                <strong>Tudo em dia.</strong>{" "}
+                <span style={{ color: "var(--green)", opacity: 0.8 }}>Nenhuma fatura vencida ou pendente.</span>
+              </span>
+            </div>
+          )}
+
           <section className="painel-stats">
             <Link href="/painel/clients" className="painel-card painel-card-link">
               <span className="painel-card-label">Clientes</span>
@@ -136,6 +149,9 @@ export default function Painel() {
           <section className="painel-clientes">
             <div className="painel-clientes-header">
               <h2>Clientes recentes</h2>
+              <Link href="/painel/clients" className="painel-clientes-ver-todos">
+                Ver todos →
+              </Link>
             </div>
 
             {resumo.clientes_recentes.length === 0 ? (

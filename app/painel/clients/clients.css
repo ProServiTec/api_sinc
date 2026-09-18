@@ -1,8 +1,14 @@
+/* ============================================================
+   CLIENTES — Identidade Zaya Sistemas
+   ============================================================ */
+
 .licencas-codigo {
   font-family: ui-monospace, "SF Mono", Consolas, monospace;
   font-size: 0.85em;
   letter-spacing: 0.02em;
 }
+
+/* ── Cabeçalho da página ──────────────────────────────────── */
 
 .clients-header {
   display: flex;
@@ -14,24 +20,24 @@
 .clients-novo-btn {
   flex-shrink: 0;
   padding: 0.65rem 1.1rem;
-  border: none;
   border-radius: 8px;
   background: var(--brand);
   color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .clients-novo-btn:hover {
-  background: #2d46c9;
+  background: var(--brand-hover);
 }
 
 .painel-card-value-muted {
-  color: #999;
+  color: var(--text-secondary);
 }
 
-/* Busca */
+/* ── Busca ────────────────────────────────────────────────── */
 
 .clients-busca {
   margin-top: 1.25rem;
@@ -40,26 +46,29 @@
 .clients-busca input {
   width: 100%;
   padding: 0.7rem 1rem;
-  border: 1px solid #e5e7eb;
+  border: 1.5px solid var(--border);
   border-radius: 10px;
   font-size: 0.9rem;
-  background: #fff;
+  background: var(--surface);
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .clients-busca input:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(57, 86, 232, 0.15);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.15);
 }
 
-/* Tabela */
+/* ── Tabela ───────────────────────────────────────────────── */
 
 .clients-tabela-wrap {
   margin-top: 1.25rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .clients-tabela {
@@ -71,17 +80,18 @@
 .clients-tabela th {
   text-align: left;
   padding: 0.85rem 1.25rem;
-  font-size: 0.75rem;
-  letter-spacing: 0.03em;
+  font-size: 0.73rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #999;
-  border-bottom: 1px solid #eee;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
 }
 
 .clients-tabela td {
   padding: 0.9rem 1.25rem;
-  border-bottom: 1px solid #f0f0f0;
-  color: #333;
+  border-bottom: 1px solid #f0f2f5;
+  color: var(--text-primary);
 }
 
 .clients-tabela tr:last-child td {
@@ -90,7 +100,7 @@
 
 .clients-razao {
   display: block;
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.8rem;
 }
 
@@ -111,17 +121,70 @@
   text-decoration: underline;
 }
 
-/* Modal "Novo Cliente" */
+/* Nome do cliente como link na tabela */
+.clients-nome-link {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.clients-nome-link:hover {
+  text-decoration: underline;
+}
+
+/* Contagem de licenças + hint de máquinas */
+.clients-licencas-count {
+  display: block;
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.clients-maquinas-hint {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+/* Célula de ações (olho) */
+.clients-td-acoes {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.clients-btn-olho {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--brand);
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.clients-btn-olho:hover {
+  opacity: 1;
+}
+
+/* Hint de campo opcional no modal */
+.clients-field-hint {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── Modal "Novo Cliente" ─────────────────────────────────── */
 
 .clients-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(20, 22, 40, 0.45);
+  background: rgba(13, 27, 42, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
   z-index: 50;
+  backdrop-filter: blur(2px);
 }
 
 .clients-modal-card {
@@ -131,9 +194,9 @@
   width: 100%;
   max-width: 420px;
   padding: 1.5rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(20, 22, 40, 0.3);
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(13, 27, 42, 0.35);
 }
 
 .clients-modal-header {
@@ -144,22 +207,25 @@
 
 .clients-modal-header h2 {
   margin: 0;
-  font-size: 1.15rem;
-  color: #1a1a2e;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .clients-modal-fechar {
-  border: none;
   background: none;
   font-size: 1.4rem;
   line-height: 1;
-  color: #999;
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: background 0.1s;
 }
 
 .clients-modal-fechar:hover {
-  color: #333;
+  background: var(--bg);
+  color: var(--text-primary);
 }
 
 .clients-field {
@@ -167,41 +233,45 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.9rem;
-  color: #333;
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .clients-field input {
-  padding: 0.6rem 0.75rem;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 1rem;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .clients-field input:focus {
   outline: none;
   border-color: var(--brand);
-  box-shadow: 0 0 0 3px rgba(57, 86, 232, 0.2);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
 }
 
 .clients-error {
-  color: #c0392b;
+  color: var(--red);
   font-size: 0.9rem;
   margin: 0;
 }
 
 .clients-cadastrar-btn {
   padding: 0.7rem;
-  border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: var(--brand);
   color: #fff;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .clients-cadastrar-btn:hover:not(:disabled) {
-  background: #2d46c9;
+  background: var(--brand-hover);
 }
 
 .clients-cadastrar-btn:disabled {
@@ -209,7 +279,7 @@
   cursor: not-allowed;
 }
 
-/* Página de detalhes do cliente */
+/* ── Página de detalhes do cliente ────────────────────────── */
 
 .clients-atualizar {
   display: flex;
@@ -220,17 +290,18 @@
 
 .clients-atualizar-btn {
   padding: 0.6rem 1.1rem;
-  border: 1px solid var(--brand);
+  border: 1.5px solid var(--brand);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   color: var(--brand);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .clients-atualizar-btn:hover:not(:disabled) {
-  background: #eef1ff;
+  background: rgba(33, 150, 243, 0.07);
 }
 
 .clients-atualizar-btn:disabled {
@@ -239,7 +310,7 @@
 }
 
 .clients-atualizar-mensagem {
-  color: #555;
+  color: var(--text-secondary);
   font-size: 0.85rem;
 }
 
@@ -265,27 +336,30 @@
 .clients-detalhe-header h1 {
   margin: 0;
   font-size: 1.5rem;
-  color: #1a1a2e;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .clients-detalhe-sub {
   margin: 0.2rem 0 0;
-  color: #888;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .clients-detalhe-card {
   margin-top: 1.5rem;
   padding: 1.5rem;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .clients-detalhe-card h2 {
   margin: 0 0 1rem;
-  font-size: 1.05rem;
-  color: #1a1a2e;
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .clients-dados-header {
@@ -301,16 +375,18 @@
 
 .clients-editar-btn {
   padding: 0.4rem 0.9rem;
-  border: 1px solid #e2e4eb;
-  border-radius: 6px;
-  background: #fff;
-  color: #3956e8;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--brand);
   font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: border-color 0.15s;
 }
 
 .clients-editar-btn:hover {
-  border-color: #3956e8;
+  border-color: var(--brand);
 }
 
 .clients-dados-acoes {
@@ -333,14 +409,16 @@
 
 .clients-dados-label {
   font-size: 0.72rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #999;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .clients-dados-grid strong {
   font-size: 0.95rem;
-  color: #333;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .clients-licencas-header {
@@ -360,17 +438,17 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.55rem 0.5rem 0.55rem 0.9rem;
-  border: none;
   border-radius: 8px;
   background: var(--brand);
   color: #fff;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s;
 }
 
 .clients-add-licenca-btn:hover {
-  background: #2d46c9;
+  background: var(--brand-hover);
 }
 
 .clients-add-licenca-valor {
@@ -392,8 +470,8 @@
 
 .clients-licenca-item {
   padding: 1rem 1.1rem;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .clients-licenca-topo {
@@ -409,14 +487,14 @@
   gap: 0.9rem;
   margin-top: 0.35rem;
   font-size: 0.82rem;
-  color: #888;
+  color: var(--text-secondary);
 }
 
 .clients-licenca-identificacao {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #3956e8;
+  color: var(--brand);
 }
 
 .clients-dispositivos {
@@ -425,7 +503,7 @@
   gap: 0.4rem;
   margin-top: 0.75rem;
   padding-top: 0.75rem;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #f0f2f5;
 }
 
 .clients-dispositivo-item {
@@ -438,7 +516,7 @@
 
 .clients-dispositivo-sync {
   margin-left: auto;
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.78rem;
 }
 
@@ -451,12 +529,14 @@
 }
 
 .clients-dot-ativo {
-  background: #1e9e5a;
+  background: var(--green);
 }
 
 .clients-dot-inativo {
   background: #ccc;
 }
+
+/* ── Badges de fatura ─────────────────────────────────────── */
 
 .clients-fatura-badge {
   display: inline-block;
@@ -468,22 +548,53 @@
 }
 
 .clients-fatura-em-dia {
-  background: rgba(46, 139, 87, 0.12);
-  color: #2e8b57;
+  background: rgba(30, 158, 90, 0.12);
+  color: var(--green);
 }
 
 .clients-fatura-pendente {
-  background: rgba(230, 162, 20, 0.14);
-  color: #b7791f;
+  background: rgba(180, 83, 9, 0.12);
+  color: var(--amber);
 }
 
 .clients-fatura-vencida {
-  background: rgba(192, 57, 43, 0.12);
-  color: #c0392b;
+  background: rgba(229, 57, 53, 0.12);
+  color: var(--red);
 }
 
 .clients-fatura-sem {
   background: transparent;
-  color: #999;
+  color: var(--text-secondary);
   font-weight: 400;
+}
+
+/* ── Seleção de plano de licença ──────────────────────────── */
+
+.clients-licencas-plano-selecao {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.clients-licencas-plano-select {
+  padding: 0.55rem 0.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: var(--surface);
+  color: var(--text-primary);
+}
+
+.clients-licenca-remover-btn {
+  background: none;
+  padding: 0;
+  color: var(--red);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+.clients-licenca-remover-btn:hover {
+  text-decoration: underline;
 }

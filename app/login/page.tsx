@@ -172,6 +172,20 @@ export default function Login() {
     <div className="login-container">
       <div className="login-content">
         <form className="login-form" onSubmit={handleSubmit}>
+          {/* Logo Zaya Sistemas */}
+          <div className="login-logo">
+            <div className="login-logo-icon">
+              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <text x="2" y="20" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="18" fill="white">Z</text>
+                <text x="17" y="12" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="11" fill="#2196F3">+</text>
+              </svg>
+            </div>
+            <div className="login-logo-text">
+              <strong>Zaya Sistemas</strong>
+              <span>Portal do Cliente</span>
+            </div>
+          </div>
+
           <h1>Entrar</h1>
           <p className="login-subtitle">Acesse com os dados da sua empresa</p>
 
