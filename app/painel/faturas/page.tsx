@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ModalPagamento from "../components/ModalPagamento";
 import "./faturas.css";
 
 interface Licenca {
@@ -321,126 +322,23 @@ export default function Faturas() {
               </div>
             )}
 
-            {/* Modal de pagamento */}
             {modalAberto && (
-              <div
-                onClick={() => !processandoPagamento && setModalAberto(false)}
-                style={{
-                  position: 'fixed', inset: 0, zIndex: 1000,
-                  background: 'rgba(15,23,42,0.55)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  backdropFilter: 'blur(2px)',
+              <ModalPagamento
+                resumo={
+                  <>
+                    {selecionadas.size} licença(s) · Total: <strong>{formatarMoeda(selecionadas.size * precoPlano)}</strong>
+                  </>
+                }
+                valorFormatado={formatarMoeda(selecionadas.size * precoPlano)}
+                metodo={metodoPagamento}
+                onMetodoChange={setMetodoPagamento}
+                processando={processandoPagamento}
+                onConfirmar={async () => {
+                  await handlePagarLote();
+                  setModalAberto(false);
                 }}
-              >
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    background: '#fff', borderRadius: 16, padding: '32px 28px',
-                    width: '100%', maxWidth: 460, boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
-                    display: 'flex', flexDirection: 'column', gap: 0,
-                  }}
-                >
-                  {/* Cabeçalho */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                    <div>
-                      <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
-                        Escolha como pagar
-                      </h2>
-                      <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '0.9rem' }}>
-                        {selecionadas.size} licença(s) · Total: <strong style={{ color: '#0f172a' }}>{formatarMoeda(selecionadas.size * precoPlano)}</strong>
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setModalAberto(false)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.4rem', color: '#94a3b8', lineHeight: 1 }}
-                    >×</button>
-                  </div>
-
-                  {/* Opção PIX */}
-                  <div
-                    onClick={() => setMetodoPagamento("pix")}
-                    style={{
-                      border: metodoPagamento === "pix" ? '2px solid var(--brand)' : '2px solid #e2e8f0',
-                      borderRadius: 12, padding: '16px 20px', cursor: 'pointer',
-                      marginBottom: 12, background: metodoPagamento === "pix" ? 'rgba(var(--brand-rgb, 59,130,246),0.05)' : '#fff',
-                      transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 16,
-                    }}
-                  >
-                    <span style={{ fontSize: '2rem', lineHeight: 1 }}>⚡</span>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ display: 'block', color: '#0f172a', fontSize: '1rem' }}>PIX</strong>
-                      <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                        Aprovação imediata · QR Code gerado pela InfinitePay
-                      </span>
-                    </div>
-                    <div style={{
-                      width: 20, height: 20, borderRadius: '50%',
-                      border: metodoPagamento === "pix" ? '6px solid var(--brand)' : '2px solid #cbd5e1',
-                      flexShrink: 0, transition: 'all 0.15s',
-                    }} />
-                  </div>
-
-                  {/* Opção Cartão */}
-                  <div
-                    onClick={() => setMetodoPagamento("cartao")}
-                    style={{
-                      border: metodoPagamento === "cartao" ? '2px solid var(--brand)' : '2px solid #e2e8f0',
-                      borderRadius: 12, padding: '16px 20px', cursor: 'pointer',
-                      marginBottom: 24, background: metodoPagamento === "cartao" ? 'rgba(var(--brand-rgb, 59,130,246),0.05)' : '#fff',
-                      transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 16,
-                    }}
-                  >
-                    <span style={{ fontSize: '2rem', lineHeight: 1 }}>💳</span>
-                    <div style={{ flex: 1 }}>
-                      <strong style={{ display: 'block', color: '#0f172a', fontSize: '1rem' }}>Cartão de Crédito</strong>
-                      <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
-                        Parcelamento disponível · Processado pela InfinitePay
-                      </span>
-                    </div>
-                    <div style={{
-                      width: 20, height: 20, borderRadius: '50%',
-                      border: metodoPagamento === "cartao" ? '6px solid var(--brand)' : '2px solid #cbd5e1',
-                      flexShrink: 0, transition: 'all 0.15s',
-                    }} />
-                  </div>
-
-                  {/* Botões de ação */}
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button
-                      type="button"
-                      onClick={() => setModalAberto(false)}
-                      disabled={processandoPagamento}
-                      style={{
-                        flex: 1, padding: '12px', borderRadius: 8, border: '2px solid #e2e8f0',
-                        background: '#fff', color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: '0.95rem',
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={async () => { await handlePagarLote(); setModalAberto(false); }}
-                      disabled={processandoPagamento}
-                      style={{
-                        flex: 2, padding: '12px', borderRadius: 8, border: 'none',
-                        background: 'var(--brand)', color: '#fff', fontWeight: 700,
-                        cursor: processandoPagamento ? 'not-allowed' : 'pointer',
-                        fontSize: '0.95rem', opacity: processandoPagamento ? 0.7 : 1,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                      }}
-                    >
-                      {processandoPagamento ? (
-                        'Gerando cobrança...'
-                      ) : (
-                        <>
-                          {metodoPagamento === "pix" ? "⚡" : "💳"}
-                          {' '}Confirmar — {formatarMoeda(selecionadas.size * precoPlano)}
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
+                onFechar={() => setModalAberto(false)}
+              />
             )}
           </section>
         </>
