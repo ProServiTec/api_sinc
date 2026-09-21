@@ -48,15 +48,20 @@ export async function GET(request: NextRequest) {
 
     // Caixas em aberto (independem do período selecionado)
     const { rows: caixasAbertos } = await pool.query(
-      `SELECT fc.id_dispositivo,
-              fc.data_abertura,
-              (SELECT MAX(v.codigo_dispositivo) FROM pdv.venda v
-                WHERE v._zaya_empresa_id = fc._zaya_empresa_id AND v.id_dispositivo = fc.id_dispositivo) AS codigo_dispositivo
-       FROM pdv.fechamento_caixa fc
-       WHERE fc._zaya_empresa_id = $1
-         AND ($2::uuid IS NULL OR fc._zaya_filial_id = $2)
-         AND fc.data_fechamento IS NULL
-       ORDER BY fc.data_abertura ASC`,
+      `WITH ultimos_caixas AS (
+         SELECT DISTINCT ON (fc.id_dispositivo)
+                fc.id_dispositivo,
+                fc.data_abertura,
+                (SELECT MAX(v.codigo_dispositivo) FROM pdv.venda v
+                  WHERE v._zaya_empresa_id = fc._zaya_empresa_id AND v.id_dispositivo = fc.id_dispositivo) AS codigo_dispositivo
+         FROM pdv.fechamento_caixa fc
+         WHERE fc._zaya_empresa_id = $1
+           AND ($2::uuid IS NULL OR fc._zaya_filial_id = $2)
+           AND fc.data_fechamento IS NULL
+         ORDER BY fc.id_dispositivo, fc.data_abertura DESC
+       )
+       SELECT * FROM ultimos_caixas
+       ORDER BY data_abertura ASC`,
       [empresaId, filialId]
     );
 
