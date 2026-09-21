@@ -75,6 +75,11 @@ interface Resumo {
   top_produtos: TopProduto[];
   receita_por_dispositivo: ReceitaDispositivo[];
   vendas_por_dia: { dia: string; vendas: number; total: number }[];
+  categorias: { categoria: string; total: number }[];
+  formas_pagamento: { forma_pagamento: number; total: number }[];
+  horario_pico: { hora: number; vendas: number; total: number }[];
+  operadores: { operador: string; total: number }[];
+  tipo_vendas: { tipo_venda: number; total: number }[];
   caixas_abertos: CaixaAberto[];
   dispositivos: Dispositivo[];
   ultima_sincronizacao: { label: string; quando: string } | null;
@@ -100,6 +105,11 @@ const GRAFICOS_DISPONIVEIS = [
   { id: "acumulada", label: "Receita Acumulada" },
   { id: "dispositivo", label: "Receita por Dispositivo" },
   { id: "produtos", label: "Top Produtos" },
+  { id: "categoria", label: "Vendas por Categoria" },
+  { id: "forma_pagamento", label: "Formas de Pagamento" },
+  { id: "horario_pico", label: "Horário de Pico" },
+  { id: "operador", label: "Vendas por Operador" },
+  { id: "tipo_venda", label: "Tipo de Vendas" },
 ] as const;
 
 type GraficoId = (typeof GRAFICOS_DISPONIVEIS)[number]["id"];
@@ -2023,6 +2033,74 @@ export default function Vendas() {
                       ))}
                     </ul>
                   )}
+                </div>
+              )}
+              {graficosVisiveis.includes("categoria") && (
+                <div className="vendas-grafico-card">
+                  <h2>Vendas por Categoria</h2>
+                  <BarChart 
+                    data={resumo.categorias.map(c => ({ 
+                      dia: c.categoria, 
+                      total: Number(c.total) 
+                    }))} 
+                  />
+                </div>
+              )}
+              {graficosVisiveis.includes("forma_pagamento") && (
+                <div className="vendas-grafico-card">
+                  <h2>Formas de Pagamento</h2>
+                  <DonutChart
+                    data={resumo.formas_pagamento.map(f => {
+                      const labels: Record<number, string> = {
+                        1: "Dinheiro", 2: "Cheque", 3: "Crédito", 4: "Débito", 
+                        5: "Crediário", 10: "Vale Alim.", 11: "Vale Ref.", 
+                        15: "Boleto", 17: "PIX", 99: "Outros"
+                      };
+                      return {
+                        label: labels[f.forma_pagamento] || `Tipo ${f.forma_pagamento}`,
+                        valor: Number(f.total),
+                        percentual: Number(resumo.resumo.receita_total) > 0 ? (Number(f.total) / Number(resumo.resumo.receita_total)) * 100 : 0
+                      };
+                    })}
+                  />
+                </div>
+              )}
+              {graficosVisiveis.includes("horario_pico") && (
+                <div className="vendas-grafico-card">
+                  <h2>Horário de Pico</h2>
+                  <BarChart 
+                    data={resumo.horario_pico.map(h => ({ 
+                      dia: `${String(h.hora).padStart(2, '0')}:00`, 
+                      total: Number(h.total) 
+                    }))} 
+                  />
+                </div>
+              )}
+              {graficosVisiveis.includes("operador") && (
+                <div className="vendas-grafico-card">
+                  <h2>Vendas por Operador</h2>
+                  <DonutChart
+                    data={resumo.operadores.map(o => ({
+                      label: o.operador,
+                      valor: Number(o.total),
+                      percentual: Number(resumo.resumo.receita_total) > 0 ? (Number(o.total) / Number(resumo.resumo.receita_total)) * 100 : 0
+                    }))}
+                  />
+                </div>
+              )}
+              {graficosVisiveis.includes("tipo_venda") && (
+                <div className="vendas-grafico-card">
+                  <h2>Tipo de Vendas</h2>
+                  <DonutChart
+                    data={resumo.tipo_vendas.map(t => {
+                      const labels: Record<number, string> = { 0: "Balcão", 1: "Delivery", 2: "Mesa/Comanda", 3: "Autoatend." };
+                      return {
+                        label: labels[t.tipo_venda] || `Tipo ${t.tipo_venda}`,
+                        valor: Number(t.total),
+                        percentual: Number(resumo.resumo.receita_total) > 0 ? (Number(t.total) / Number(resumo.resumo.receita_total)) * 100 : 0
+                      };
+                    })}
+                  />
                 </div>
               )}
             </section>

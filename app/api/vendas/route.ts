@@ -98,6 +98,11 @@ export async function GET(request: NextRequest) {
       ultimaSyncResult,
       resumoAnteriorResult,
       receitaPorDispositivoResult,
+      categoriasResult,
+      formasPagamentoResult,
+      horarioPicoResult,
+      operadoresResult,
+      tipoVendasResult
     ] = await Promise.all([
         pool.query(
           `SELECT count(*)::int AS total_vendas, COALESCE(SUM(v.valor_total_liquido), 0) AS receita_total
@@ -195,6 +200,76 @@ export async function GET(request: NextRequest) {
            ORDER BY total DESC`,
           p
         ),
+        pool.query(
+          `SELECT COALESCE(g.descricao, 'Sem Categoria') AS categoria, SUM(vi.valor_total_liquido) AS total
+           FROM pdv.venda_item vi
+           JOIN pdv.venda v ON v.id_venda = vi.id_venda AND v._zaya_empresa_id = vi._zaya_empresa_id
+           LEFT JOIN pdv.produto pr ON pr.id_produto = vi.id_produto AND pr._zaya_empresa_id = vi._zaya_empresa_id
+           LEFT JOIN pdv.prod_grupo g ON g.id_prod_grupo = pr.id_prod_grupo AND g._zaya_empresa_id = pr._zaya_empresa_id
+           WHERE vi._zaya_empresa_id = $1
+             AND v.cancelada_pelo_usuario = '0'
+             AND vi.cancelado = '0'
+             AND v.data_hora_criado::timestamp >= $2::timestamp
+             AND v.data_hora_criado::timestamp <= $3::timestamp
+             ${filtro}
+           GROUP BY categoria
+           ORDER BY total DESC
+           LIMIT 10`,
+          p
+        ),
+        pool.query(
+          `SELECT fp.forma_pagamento, SUM(fp.valor) AS total
+           FROM pdv.venda_forma_pagamento fp
+           JOIN pdv.venda v ON v.id_venda = fp.id_venda AND v._zaya_empresa_id = fp._zaya_empresa_id
+           WHERE fp._zaya_empresa_id = $1
+             AND v.cancelada_pelo_usuario = '0'
+             AND v.data_hora_criado::timestamp >= $2::timestamp
+             AND v.data_hora_criado::timestamp <= $3::timestamp
+             ${filtro}
+           GROUP BY fp.forma_pagamento
+           ORDER BY total DESC`,
+          p
+        ),
+        pool.query(
+          `SELECT EXTRACT(HOUR FROM v.data_hora_criado::timestamp)::int AS hora,
+                  COUNT(*)::int AS vendas,
+                  SUM(v.valor_total_liquido) AS total
+           FROM pdv.venda v
+           WHERE v._zaya_empresa_id = $1
+             AND v.cancelada_pelo_usuario = '0'
+             AND v.data_hora_criado::timestamp >= $2::timestamp
+             AND v.data_hora_criado::timestamp <= $3::timestamp
+             ${filtro}
+           GROUP BY hora
+           ORDER BY hora ASC`,
+          p
+        ),
+        pool.query(
+          `SELECT COALESCE(o.nome, 'Sem Operador') AS operador,
+                  SUM(v.valor_total_liquido) AS total
+           FROM pdv.venda v
+           LEFT JOIN pdv.operador o ON o.id_operador = v.id_operador AND o._zaya_empresa_id = v._zaya_empresa_id
+           WHERE v._zaya_empresa_id = $1
+             AND v.cancelada_pelo_usuario = '0'
+             AND v.data_hora_criado::timestamp >= $2::timestamp
+             AND v.data_hora_criado::timestamp <= $3::timestamp
+             ${filtro}
+           GROUP BY operador
+           ORDER BY total DESC`,
+          p
+        ),
+        pool.query(
+          `SELECT v.tipo_venda, SUM(v.valor_total_liquido) AS total
+           FROM pdv.venda v
+           WHERE v._zaya_empresa_id = $1
+             AND v.cancelada_pelo_usuario = '0'
+             AND v.data_hora_criado::timestamp >= $2::timestamp
+             AND v.data_hora_criado::timestamp <= $3::timestamp
+             ${filtro}
+           GROUP BY v.tipo_venda
+           ORDER BY total DESC`,
+          p
+        ),
       ]);
 
     const resumo = resumoResult.rows[0];
@@ -253,6 +328,11 @@ export async function GET(request: NextRequest) {
           id_dispositivo: d.id_dispositivo,
           label: d.codigo_dispositivo ? `Dispositivo ${d.codigo_dispositivo}` : d.id_dispositivo.slice(0, 8),
         })),
+        categorias: categoriasResult.rows,
+        formas_pagamento: formasPagamentoResult.rows,
+        horario_pico: horarioPicoResult.rows,
+        operadores: operadoresResult.rows,
+        tipo_vendas: tipoVendasResult.rows,
         ultima_sincronizacao: ultimaSync
           ? {
               label: ultimaSync.codigo_dispositivo ? `Dispositivo ${ultimaSync.codigo_dispositivo}` : "Dispositivo",
