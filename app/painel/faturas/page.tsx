@@ -16,6 +16,13 @@ interface Licenca {
   valor?: number;
 }
 
+interface Plano {
+  id: string;
+  nome: string;
+  valor: string;
+  periodicidade: string;
+}
+
 interface Faturas {
   licencas_resumo: { total: number; ativas: number };
   titulos: {
@@ -25,6 +32,7 @@ interface Faturas {
     pendentes_valor: string;
   };
   licencas: Licenca[];
+  planos: Plano[];
 }
 
 function formatarData(iso: string) {
@@ -43,12 +51,19 @@ function StatusBadge({ ativo }: { ativo: boolean }) {
   );
 }
 
+function isPrecisandoRenovar(l: Licenca) {
+  if (!l.ativo) return true;
+  if (!l.vence_em) return false;
+  const dias = Math.ceil((new Date(l.vence_em).getTime() - new Date().getTime()) / 86400000);
+  return dias <= 10;
+}
+
 export default function Faturas() {
   const [dados, setDados] = useState<Faturas | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
-  const [plano, setPlano] = useState<"mensal" | "anual">("mensal");
+  const [planoId, setPlanoId] = useState<string>("");
 
   useEffect(() => {
     const raw = sessionStorage.getItem("empresa");
@@ -62,6 +77,9 @@ export default function Faturas() {
           throw new Error(data.error ?? "Não foi possível carregar as faturas");
         }
         setDados(data as Faturas);
+        if (data.planos && data.planos.length > 0) {
+          setPlanoId(data.planos[0].id);
+        }
       })
       .catch((err) => setError(err.message ?? "Não foi possível carregar as faturas"))
       .finally(() => setLoading(false));
@@ -80,10 +98,13 @@ export default function Faturas() {
     setSelecionadas(new Set());
   }
 
-  // Quantidade que precisa renovar: não ativas (revogadas)
   const precisamRenovar = dados
-    ? dados.licencas.filter((l) => !l.ativo).length
+    ? dados.licencas.filter(isPrecisandoRenovar).length
     : 0;
+
+  const planoSelecionado = dados?.planos.find(p => p.id === planoId);
+  const precoPlano = planoSelecionado ? Number(planoSelecionado.valor) : 0;
+  const isAnual = planoSelecionado?.periodicidade === "anual";
 
   return (
     <>
@@ -93,8 +114,9 @@ export default function Faturas() {
           <p>Gerencie pagamentos das suas licenças</p>
         </div>
         <div className="faturas-preco-info">
-          <span>Mensal: <strong>R$ 11,99</strong>/licença</span>
-          <span>Anual: <strong>R$ 115,10</strong>/licença <span className="faturas-desconto">20% off</span></span>
+          {dados?.planos.map(p => (
+            <span key={p.id}>{p.nome}: <strong>{formatarMoeda(Number(p.valor))}</strong>/{p.periodicidade}</span>
+          ))}
         </div>
       </header>
 
@@ -138,8 +160,7 @@ export default function Faturas() {
                   type="button"
                   className="faturas-acao-btn faturas-acao-btn-brand"
                   onClick={() => {
-                    const precisam = dados.licencas.filter((l) => !l.ativo).map((l) => l.id);
-                    // se não tiver nenhuma que precise, seleciona todas para facilitar testes
+                    const precisam = dados.licencas.filter(isPrecisandoRenovar).map((l) => l.id);
                     if (precisam.length === 0) {
                       setSelecionadas(new Set(dados.licencas.map(l => l.id)));
                     } else {
@@ -156,14 +177,19 @@ export default function Faturas() {
                 >
                   Limpar
                 </button>
-                <select 
-                  className="faturas-select" 
-                  value={plano} 
-                  onChange={(e) => setPlano(e.target.value as "mensal" | "anual")}
-                >
-                  <option value="mensal">Mensal — R$ 11,99/licença</option>
-                  <option value="anual">Anual — R$ 115,10/licença</option>
-                </select>
+                {dados.planos.length > 0 && (
+                  <select 
+                    className="faturas-select" 
+                    value={planoId} 
+                    onChange={(e) => setPlanoId(e.target.value)}
+                  >
+                    {dados.planos.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.nome} — {formatarMoeda(Number(p.valor))}/{p.periodicidade}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
 
@@ -195,11 +221,10 @@ export default function Faturas() {
                         
                         {selecionadas.has(l.id) ? (() => {
                           const dt = l.vence_em ? new Date(l.vence_em) : new Date();
-                          // se já venceu há muito tempo, começa a contar de hoje
                           if (dt < new Date()) {
                             dt.setTime(new Date().getTime());
                           }
-                          if (plano === "anual") dt.setFullYear(dt.getFullYear() + 1);
+                          if (isAnual) dt.setFullYear(dt.getFullYear() + 1);
                           else dt.setMonth(dt.getMonth() + 1);
                           
                           const dias = Math.ceil((dt.getTime() - new Date().getTime()) / 86400000);
@@ -209,15 +234,15 @@ export default function Faturas() {
                             </span>
                           );
                         })() : (
-                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{plano === "anual" ? "Anual" : "Mensal"}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{planoSelecionado?.nome ?? "Mensal"}</span>
                         )}
                       </div>
                     </div>
                     <div className="faturas-item-valor">
                       <span className="faturas-valor-principal">
-                        {formatarMoeda(plano === "anual" ? 115.10 : 11.99)}
+                        {formatarMoeda(precoPlano)}
                       </span>
-                      <span className="faturas-valor-periodo">/{plano === "anual" ? "ano" : "mês"}</span>
+                      <span className="faturas-valor-periodo">/{planoSelecionado?.periodicidade === "anual" ? "ano" : "mês"}</span>
                     </div>
                   </li>
                 ))}
@@ -234,7 +259,7 @@ export default function Faturas() {
                     {selecionadas.size} licença(s) selecionada(s)
                   </span>
                   <strong style={{ fontSize: '1.5rem', color: '#0f172a' }}>
-                    Total: {formatarMoeda(selecionadas.size * (plano === "anual" ? 115.10 : 11.99))}
+                    Total: {formatarMoeda(selecionadas.size * precoPlano)}
                   </strong>
                 </div>
                 <button 
@@ -242,8 +267,8 @@ export default function Faturas() {
                   className="faturas-acao-btn"
                   style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
                   onClick={() => {
-                    const total = formatarMoeda(selecionadas.size * (plano === "anual" ? 115.10 : 11.99));
-                    alert(`Redirecionando para pagamento via InfinitePay...\n\nPlano: ${plano.toUpperCase()}\nLicenças: ${selecionadas.size}\nTotal: ${total}`);
+                    const total = formatarMoeda(selecionadas.size * precoPlano);
+                    alert(`Redirecionando para pagamento via InfinitePay...\n\nPlano: ${planoSelecionado?.nome.toUpperCase()}\nLicenças: ${selecionadas.size}\nTotal: ${total}`);
                     limparSelecao();
                   }}
                 >

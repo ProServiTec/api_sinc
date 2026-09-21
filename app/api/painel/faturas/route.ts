@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const [licencasResumo, titulosResumo, licencas] = await Promise.all([
+    const [licencasResumo, titulosResumo, licencas, planosResult] = await Promise.all([
       // "Licenças" = filiais de todas as empresas-cliente (não-admin)
       pool.query(
         `SELECT count(*)::int AS total, count(*) FILTER (WHERE f.ativo)::int AS ativas
@@ -48,6 +48,12 @@ export async function GET(request: NextRequest) {
          WHERE e.is_admin = false
          ORDER BY f.created_at DESC`
       ),
+      pool.query(
+        `SELECT id, nome, valor, periodicidade
+         FROM core.licencas
+         WHERE ativo = true
+         ORDER BY valor ASC`
+      ),
     ]);
 
     return new Response(
@@ -55,6 +61,7 @@ export async function GET(request: NextRequest) {
         licencas_resumo: licencasResumo.rows[0],
         titulos: titulosResumo.rows[0],
         licencas: licencas.rows,
+        planos: planosResult.rows,
       }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
