@@ -48,6 +48,7 @@ export default function Faturas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
+  const [plano, setPlano] = useState<"mensal" | "anual">("mensal");
 
   useEffect(() => {
     const raw = sessionStorage.getItem("empresa");
@@ -137,8 +138,13 @@ export default function Faturas() {
                   type="button"
                   className="faturas-acao-btn faturas-acao-btn-brand"
                   onClick={() => {
-                    const inativos = dados.licencas.filter((l) => !l.ativo).map((l) => l.id);
-                    setSelecionadas(new Set(inativos));
+                    const precisam = dados.licencas.filter((l) => !l.ativo).map((l) => l.id);
+                    // se não tiver nenhuma que precise, seleciona todas para facilitar testes
+                    if (precisam.length === 0) {
+                      setSelecionadas(new Set(dados.licencas.map(l => l.id)));
+                    } else {
+                      setSelecionadas(new Set(precisam));
+                    }
                   }}
                 >
                   Selecionar tudo que precisa renovar
@@ -150,8 +156,13 @@ export default function Faturas() {
                 >
                   Limpar
                 </button>
-                <select className="faturas-select" disabled title="Em breve">
-                  <option>Mensal — R$ 11,99/licença</option>
+                <select 
+                  className="faturas-select" 
+                  value={plano} 
+                  onChange={(e) => setPlano(e.target.value as "mensal" | "anual")}
+                >
+                  <option value="mensal">Mensal — R$ 11,99/licença</option>
+                  <option value="anual">Anual — R$ 115,10/licença</option>
                 </select>
               </div>
             </div>
@@ -168,7 +179,7 @@ export default function Faturas() {
                       checked={selecionadas.has(l.id)}
                       onChange={() => toggleSelecionada(l.id)}
                     />
-                    <div className="faturas-item-info">
+                    <div className="faturas-item-info" onClick={() => toggleSelecionada(l.id)} style={{ cursor: "pointer", flex: 1 }}>
                       <div className="faturas-item-topo">
                         <span className="faturas-item-cliente-nome">{l.cliente_nome}</span>
                         <StatusBadge ativo={l.ativo} />
@@ -181,18 +192,46 @@ export default function Faturas() {
                             ? `Vence: ${formatarData(l.vence_em)}`
                             : `Criada: ${formatarData(l.created_at)}`}
                         </span>
-                        <span>{l.plano ?? "Mensal"}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--cor-marca)' }}>{plano === "anual" ? "Anual" : "Mensal"}</span>
                       </div>
                     </div>
                     <div className="faturas-item-valor">
                       <span className="faturas-valor-principal">
-                        {formatarMoeda(l.valor ?? 11.99)}
+                        {formatarMoeda(plano === "anual" ? 115.10 : 11.99)}
                       </span>
-                      <span className="faturas-valor-periodo">/mês</span>
+                      <span className="faturas-valor-periodo">/{plano === "anual" ? "ano" : "mês"}</span>
                     </div>
                   </li>
                 ))}
               </ul>
+            )}
+
+            {selecionadas.size > 0 && (
+              <div className="faturas-checkout-bar" style={{
+                marginTop: 24, padding: 24, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }}>
+                <div>
+                  <span style={{ display: 'block', fontSize: '0.9rem', color: '#64748b' }}>
+                    {selecionadas.size} licença(s) selecionada(s)
+                  </span>
+                  <strong style={{ fontSize: '1.5rem', color: '#0f172a' }}>
+                    Total: {formatarMoeda(selecionadas.size * (plano === "anual" ? 115.10 : 11.99))}
+                  </strong>
+                </div>
+                <button 
+                  type="button" 
+                  className="faturas-acao-btn faturas-acao-btn-brand"
+                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--cor-marca)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                  onClick={() => {
+                    const total = formatarMoeda(selecionadas.size * (plano === "anual" ? 115.10 : 11.99));
+                    alert(`Redirecionando para pagamento via InfinitePay...\n\nPlano: ${plano.toUpperCase()}\nLicenças: ${selecionadas.size}\nTotal: ${total}`);
+                    limparSelecao();
+                  }}
+                >
+                  Renovar e Pagar
+                </button>
+              </div>
             )}
           </section>
         </>
