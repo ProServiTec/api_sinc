@@ -26,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     });
   }
 
-  const { revenda_id, licenca_id } = (body ?? {}) as Record<string, unknown>;
+  const { revenda_id, licenca_id, metodo_pagamento } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof revenda_id !== "string" || revenda_id.trim() === "") {
@@ -101,6 +101,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         orderNsu: pedido.id,
         redirectUrl: appUrl ? `${appUrl}/painel/clients/${token}?pedido=${pedido.id}` : undefined,
         webhookUrl: appUrl ? `${appUrl}/api/webhooks/infinitepay` : undefined,
+        paymentMethod: metodo_pagamento === "cartao" ? "credit_card" : "pix",
       });
 
       const { rows: atualizado } = await pool.query(

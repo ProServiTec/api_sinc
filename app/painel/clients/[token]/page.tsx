@@ -126,6 +126,7 @@ export default function DetalheCliente() {
     valor: string;
   } | null>(null);
   const [verificandoPagamento, setVerificandoPagamento] = useState(false);
+  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix");
 
   const [atualizando, setAtualizando] = useState(false);
   const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
@@ -182,7 +183,7 @@ export default function DetalheCliente() {
       const response = await fetch(`/api/painel/clientes/${encodeURIComponent(params.token)}/licencas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ revenda_id: revendaId, licenca_id: licencaSelecionada }),
+        body: JSON.stringify({ revenda_id: revendaId, licenca_id: licencaSelecionada, metodo_pagamento: metodoPagamento }),
       });
 
       const data = await response.json();
@@ -452,13 +453,48 @@ export default function DetalheCliente() {
                     </option>
                   ))}
                 </select>
+
+                {/* Seletor de método de pagamento */}
+                {licencaSelecionada && !pedidoPix && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagamento("pix")}
+                      style={{
+                        padding: "7px 16px", borderRadius: 7,
+                        border: metodoPagamento === "pix" ? "2px solid var(--brand)" : "2px solid #e2e8f0",
+                        background: metodoPagamento === "pix" ? "var(--brand)" : "#fff",
+                        color: metodoPagamento === "pix" ? "#fff" : "#374151",
+                        fontWeight: 600, cursor: "pointer", fontSize: "0.88rem",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}
+                    >
+                      ⚡ PIX
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagamento("cartao")}
+                      style={{
+                        padding: "7px 16px", borderRadius: 7,
+                        border: metodoPagamento === "cartao" ? "2px solid var(--brand)" : "2px solid #e2e8f0",
+                        background: metodoPagamento === "cartao" ? "var(--brand)" : "#fff",
+                        color: metodoPagamento === "cartao" ? "#fff" : "#374151",
+                        fontWeight: 600, cursor: "pointer", fontSize: "0.88rem",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}
+                    >
+                      💳 Cartão
+                    </button>
+                  </div>
+                )}
+
                 <button
                   className="clients-add-licenca-btn"
                   onClick={handleComprarLicenca}
                   disabled={!licencaSelecionada || adicionando || !!pedidoPix}
                 >
                   {adicionando
-                    ? "Gerando cobrança PIX..."
+                    ? "Gerando cobrança..."
                     : `+ Nova Licença${
                         planoSelecionado ? ` (${formatarMoeda(planoSelecionado.valor)})` : ""
                       }`}
@@ -473,7 +509,7 @@ export default function DetalheCliente() {
 
             {pedidoPix && pedidoPix.status === "pendente" && (
               <div className="clients-detalhe-card" style={{ marginBottom: "1rem" }}>
-                <strong>Aguardando pagamento PIX de {formatarMoeda(pedidoPix.valor)}...</strong>
+                <strong>Aguardando pagamento de {formatarMoeda(pedidoPix.valor)}...</strong>
                 <p className="painel-card-hint">
                   A licença só é liberada pro cliente depois que o pagamento for confirmado.
                 </p>
@@ -485,7 +521,7 @@ export default function DetalheCliente() {
                       rel="noreferrer"
                       className="clients-cadastrar-btn"
                     >
-                      Abrir cobrança PIX
+                      Abrir cobrança
                     </a>
                   )}
                   <button onClick={verificarPagamentoPedido} disabled={verificandoPagamento}>
