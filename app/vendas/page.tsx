@@ -1926,8 +1926,8 @@ export default function Vendas() {
             <span className="vendas-caixas-dot" />
             <strong>{resumo.caixas_abertos.length} caixa(s) aberto(s)</strong>
             <div className="vendas-caixas-lista">
-              {resumo.caixas_abertos.map((c) => (
-                <span key={c.id_dispositivo} className="vendas-caixa-chip">
+              {resumo.caixas_abertos.map((c, idx) => (
+                <span key={idx} className="vendas-caixa-chip">
                   <span className="vendas-caixas-dot" /> {c.label} · {c.horas_aberto}h
                 </span>
               ))}
