@@ -44,6 +44,6 @@ Isso NÃO é necessário pro sistema funcionar — sem domínio, a confirmação
 1. Sugira um domínio disponível relacionado ao projeto e ME CONFIRME o nome e o preço ANTES de registrar — é uma compra real.
 2. Aponte um registro DNS tipo A do domínio pro IP da VPS: 69.62.93.76.
 3. Configure um reverse proxy com HTTPS na frente da porta 30010 (recomendo Caddy, que tira certificado Let's Encrypt sozinho).
-4. Adicione APP_URL=https://seu-dominio.com no .env e reinicie.
+4. Adicione APP_URL=http://sinc.zayasistemas.com no .env e reinicie.
 
 Me avise assim que terminar o Passo 3 (com o resultado exato que apareceu), ou se encontrar algum erro em qualquer etapa.
