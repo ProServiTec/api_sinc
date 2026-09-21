@@ -192,7 +192,25 @@ export default function Faturas() {
                             ? `Vence: ${formatarData(l.vence_em)}`
                             : `Criada: ${formatarData(l.created_at)}`}
                         </span>
-                        <span style={{ fontWeight: 600, color: 'var(--cor-marca)' }}>{plano === "anual" ? "Anual" : "Mensal"}</span>
+                        
+                        {selecionadas.has(l.id) ? (() => {
+                          const dt = l.vence_em ? new Date(l.vence_em) : new Date();
+                          // se já venceu há muito tempo, começa a contar de hoje
+                          if (dt < new Date()) {
+                            dt.setTime(new Date().getTime());
+                          }
+                          if (plano === "anual") dt.setFullYear(dt.getFullYear() + 1);
+                          else dt.setMonth(dt.getMonth() + 1);
+                          
+                          const dias = Math.ceil((dt.getTime() - new Date().getTime()) / 86400000);
+                          return (
+                            <span style={{ color: 'var(--green)', fontWeight: 500 }}>
+                              ➔ Vai até {formatarData(dt.toISOString())} (+{dias} dias)
+                            </span>
+                          );
+                        })() : (
+                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{plano === "anual" ? "Anual" : "Mensal"}</span>
+                        )}
                       </div>
                     </div>
                     <div className="faturas-item-valor">
@@ -221,8 +239,8 @@ export default function Faturas() {
                 </div>
                 <button 
                   type="button" 
-                  className="faturas-acao-btn faturas-acao-btn-brand"
-                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--cor-marca)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                  className="faturas-acao-btn"
+                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
                   onClick={() => {
                     const total = formatarMoeda(selecionadas.size * (plano === "anual" ? 115.10 : 11.99));
                     alert(`Redirecionando para pagamento via InfinitePay...\n\nPlano: ${plano.toUpperCase()}\nLicenças: ${selecionadas.size}\nTotal: ${total}`);

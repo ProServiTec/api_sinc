@@ -138,9 +138,9 @@
   border: 1.5px solid var(--border);
   border-radius: 8px;
   font-size: 0.82rem;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   background: var(--bg);
-  cursor: not-allowed;
+  cursor: pointer;
 }
 
 /* ── Lista de licenças ────────────────────────────────────── */
