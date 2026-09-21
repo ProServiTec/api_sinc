@@ -65,6 +65,7 @@ export default function Faturas() {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [planoId, setPlanoId] = useState<string>("");
   const [processandoPagamento, setProcessandoPagamento] = useState(false);
+  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix");
 
   useEffect(() => {
     const raw = sessionStorage.getItem("empresa");
@@ -117,6 +118,7 @@ export default function Faturas() {
           revenda_id: empresa.id,
           plano_id: planoId,
           filiais_ids: Array.from(selecionadas),
+          metodo_pagamento: metodoPagamento,
         }),
       });
 
@@ -291,24 +293,93 @@ export default function Faturas() {
             {selecionadas.size > 0 && (
               <div className="faturas-checkout-bar" style={{
                 marginTop: 24, padding: 24, background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
-                <div>
-                  <span style={{ display: 'block', fontSize: '0.9rem', color: '#64748b' }}>
-                    {selecionadas.size} licença(s) selecionada(s)
-                  </span>
-                  <strong style={{ fontSize: '1.5rem', color: '#0f172a' }}>
-                    Total: {formatarMoeda(selecionadas.size * precoPlano)}
-                  </strong>
+                {/* Linha do total */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                  <div>
+                    <span style={{ display: 'block', fontSize: '0.9rem', color: '#64748b' }}>
+                      {selecionadas.size} licença(s) selecionada(s)
+                    </span>
+                    <strong style={{ fontSize: '1.5rem', color: '#0f172a' }}>
+                      Total: {formatarMoeda(selecionadas.size * precoPlano)}
+                    </strong>
+                  </div>
                 </div>
-                <button 
-                  type="button" 
+
+                {/* Seleção de método */}
+                <div style={{ marginBottom: 16 }}>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b', display: 'block', marginBottom: 8, fontWeight: 600 }}>
+                    Como deseja pagar?
+                  </span>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagamento("pix")}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        border: metodoPagamento === "pix" ? '2px solid var(--brand)' : '2px solid #e2e8f0',
+                        background: metodoPagamento === "pix" ? 'var(--brand)' : '#fff',
+                        color: metodoPagamento === "pix" ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>⚡</span> PIX
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMetodoPagamento("cartao")}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: 8,
+                        border: metodoPagamento === "cartao" ? '2px solid var(--brand)' : '2px solid #e2e8f0',
+                        background: metodoPagamento === "cartao" ? 'var(--brand)' : '#fff',
+                        color: metodoPagamento === "cartao" ? '#fff' : '#374151',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      <span style={{ fontSize: '1.2rem' }}>💳</span> Cartão de Crédito
+                    </button>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>
+                    {metodoPagamento === "pix"
+                      ? "Aprovação imediata. O QR Code será gerado pela InfinitePay."
+                      : "Parcelamento disponível. A cobrança será processada pela InfinitePay."}
+                  </p>
+                </div>
+
+                {/* Botão de confirmar */}
+                <button
+                  type="button"
                   className="faturas-acao-btn"
-                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 8, cursor: processandoPagamento ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: processandoPagamento ? 0.7 : 1 }}
+                  style={{
+                    padding: '12px 32px', fontSize: '1.1rem',
+                    background: 'var(--brand)', color: '#fff',
+                    border: 'none', borderRadius: 8,
+                    cursor: processandoPagamento ? 'not-allowed' : 'pointer',
+                    fontWeight: 600, opacity: processandoPagamento ? 0.7 : 1,
+                    width: '100%',
+                  }}
                   disabled={processandoPagamento}
                   onClick={handlePagarLote}
                 >
-                  {processandoPagamento ? "Gerando PIX..." : "Renovar e Pagar"}
+                  {processandoPagamento
+                    ? "Gerando cobrança..."
+                    : metodoPagamento === "pix"
+                      ? `⚡ Renovar e Pagar com PIX — ${formatarMoeda(selecionadas.size * precoPlano)}`
+                      : `💳 Renovar e Pagar com Cartão — ${formatarMoeda(selecionadas.size * precoPlano)}`}
                 </button>
               </div>
             )}

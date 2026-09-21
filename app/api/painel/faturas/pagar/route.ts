@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { revenda_id, plano_id, filiais_ids } = (body ?? {}) as Record<string, unknown>;
+  const { revenda_id, plano_id, filiais_ids, metodo_pagamento } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof revenda_id !== "string" || revenda_id.trim() === "") {
@@ -107,8 +107,9 @@ export async function POST(request: NextRequest) {
         handle,
         items: [{ quantity: filiaisEncontradas.length, price: precoCentavos, description: `Renovação: ${licenca.nome}` }],
         orderNsu: loteId,
-        redirectUrl: appUrl ? `${appUrl}/painel/faturas` : undefined, // Volta para faturas
+        redirectUrl: appUrl ? `${appUrl}/painel/faturas` : undefined,
         webhookUrl: appUrl ? `${appUrl}/api/webhooks/infinitepay` : undefined,
+        paymentMethod: metodo_pagamento === "cartao" ? "credit_card" : "pix",
       });
 
       // Atualiza os pedidos do lote com as informações do link
@@ -139,3 +140,4 @@ export async function POST(request: NextRequest) {
     });
   }
 }
+
