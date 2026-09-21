@@ -1,0 +1,49 @@
+Preciso que você faça o deploy de uma atualização no projeto "sinc" (aplicação Next.js) que está rodando na nossa VPS da Hostinger, hoje acessível em http://69.62.93.76:30010. Você tem acesso ao painel da Hostinger e à VPS — siga os passos abaixo.
+
+CONTEXTO
+A atualização adiciona pagamento via PIX (InfinitePay) na compra de licença pelo painel do revendedor. O código já está no GitHub, pronto pra puxar: https://github.com/ProServiTec/api_sinc.git, branch "main". Não precisa de nenhum arquivo separado, só atualizar a VPS com o que já está lá.
+
+PASSO 1 — Descobrir como o deploy é feito hoje
+Antes de mexer em qualquer coisa, entre na VPS e identifique:
+- Onde fica o código do projeto (uma pasta "sinc", rodando via `npm run build && npm start`, PM2, Docker ou algo do tipo, hoje exposta na porta 30010).
+- Como esse processo é normalmente atualizado (git pull + restart? redeploy de zip? Docker rebuild?).
+Use o MESMO método que já é usado hoje pra não quebrar nada.
+
+PASSO 2 — Atualizar o código
+Puxe a branch "main" do repositório https://github.com/ProServiTec/api_sinc.git (git pull, ou clone novo se for mais simples nesse setup). Rode `npm install` se precisar, rode o build (`npm run build`) e reinicie a aplicação.
+
+PASSO 3 — Rodar a migration do banco (SEM precisar de acesso direto ao Postgres)
+Esta atualização já vem com uma rota própria que roda a migration usando a mesma conexão de banco que a aplicação já usa (DATABASE_URL) — não precisa de psql nem de usuário admin do banco. Só precisa disso:
+
+1. No arquivo .env da aplicação (na VPS), adicione uma linha nova:
+   ADMIN_MIGRATION_KEY=2fee1bb31276fb89294e0cac2778934dca1a5d332b8f6951
+   (pode ser esse valor ou outro que você preferir — é só uma senha temporária)
+2. Reinicie a aplicação pra carregar essa variável nova.
+3. Acesse esta URL (pelo navegador ou curl), trocando o valor de "chave" pelo mesmo que você colocou no .env:
+   http://69.62.93.76:30010/api/admin/migrar-pix?chave=2fee1bb31276fb89294e0cac2778934dca1a5d332b8f6951
+4. A resposta esperada é:
+   {"ok":true,"verificacao":{"tabela_existe":true,"coluna_existe":true}}
+   Se vier diferente disso (erro), me manda o JSON completo que apareceu — não tente adivinhar o que fazer, me avisa.
+
+PASSO 4 — Limpeza (depois de confirmar que o Passo 3 deu certo)
+Depois que a resposta do Passo 3 vier com "ok":true:
+1. Remova a variável ADMIN_MIGRATION_KEY do .env.
+2. Apague a pasta app/api/admin/migrar-pix do código (ela não deve ficar em produção depois de usada).
+3. Faça o build e reinicie a aplicação de novo.
+Essa rota é só uma ferramenta de uma vez só — não é pra continuar acessível depois.
+
+PASSO 5 — Validar
+Depois do deploy:
+- Confirme que a aplicação sobe sem erro (log de start/console).
+- Acesse /master/configuracoes no navegador e confirme que aparece um campo novo "InfiniteTag (handle da InfinitePay)".
+- Acesse /master/financas e confirme que aparece uma seção nova "Pedidos de licença aguardando pagamento PIX".
+Se algum desses dois não aparecer, o deploy do código não pegou as mudanças — revise o Passo 2.
+
+PASSO 6 — Domínio e HTTPS (opcional, pode deixar pra depois)
+Isso NÃO é necessário pro sistema funcionar — sem domínio, a confirmação de pagamento PIX é feita manualmente pelo Master (aba Finanças). Só faça esta parte se eu pedir especificamente depois:
+1. Sugira um domínio disponível relacionado ao projeto e ME CONFIRME o nome e o preço ANTES de registrar — é uma compra real.
+2. Aponte um registro DNS tipo A do domínio pro IP da VPS: 69.62.93.76.
+3. Configure um reverse proxy com HTTPS na frente da porta 30010 (recomendo Caddy, que tira certificado Let's Encrypt sozinho).
+4. Adicione APP_URL=https://seu-dominio.com no .env e reinicie.
+
+Me avise assim que terminar o Passo 3 (com o resultado exato que apareceu), ou se encontrar algum erro em qualquer etapa.
