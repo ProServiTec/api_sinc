@@ -3,20 +3,6 @@ import { pool } from "@/lib/db";
 import { confirmarPedidoPago } from "@/lib/pedidosLicenca";
 import { verificarPagamento, InfinitePayError } from "@/lib/infinitepay";
 
-/**
- * Webhook de pagamento da InfinitePay. A documentação pública da InfinitePay
- * NÃO especifica nenhuma assinatura/segredo pra validar que a chamada veio
- * mesmo da InfinitePay — por isso, antes de confirmar o pedido, este endpoint
- * reconfirma a transação direto com a InfinitePay via payment_check (server a
- * server) e ainda compara o valor pago com o valor esperado do pedido, como
- * camada extra de proteção contra uma chamada forjada nesta URL.
- *
- * Sempre responde 200 mesmo em erro de negócio (pedido não encontrado, etc.)
- * pra evitar retries infinitos da InfinitePay por algo que não vai se
- * resolver tentando de novo; só responde diferente de 200 em erro transitório
- * (ex.: falha ao falar com a InfinitePay ou com o banco), que é quando faz
- * sentido a InfinitePay tentar reenviar.
- */
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
   try {
@@ -37,16 +23,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Busca todos os pedidos que correspondam ao ID único OU ao lote_id
     const { rows: pedidoRows } = await pool.query(
-      `SELECT id, valor, invoice_slug, status FROM core.pedidos_licenca WHERE id = $1`,
+      `SELECT id, valor, invoice_slug, status FROM core.pedidos_licenca WHERE id = $1 OR lote_id = $1`,
       [orderNsu]
     );
-    if (pedidoRows.length === 0) {
-      return new Response(JSON.stringify({ error: "Pedido não encontrado" }), { status: 200 });
-    }
-    const pedido = pedidoRows[0];
 
-    if (pedido.status === "pago") {
+    if (pedidoRows.length === 0) {
+      return new Response(JSON.stringify({ error: "Pedido ou Lote não encontrado" }), { status: 200 });
+    }
+
+    // Se todos já estiverem pagos, apenas retorna OK (idempotência)
+    if (pedidoRows.every((p) => p.status === "pago")) {
       return new Response(JSON.stringify({ ok: true, ja_confirmado: true }), { status: 200 });
     }
 
@@ -58,7 +46,9 @@ export async function POST(request: NextRequest) {
        LIMIT 1`
     );
     const handle = configRows[0]?.infinitepay_handle as string | undefined;
-    const slug = invoiceSlugWebhook ?? pedido.invoice_slug;
+    
+    // Todos os pedidos do lote terão o mesmo invoice_slug se gerados pelo novo fluxo
+    const slug = invoiceSlugWebhook ?? pedidoRows[0].invoice_slug;
 
     if (!handle || !slug) {
       return new Response(JSON.stringify({ error: "Handle ou slug ausente, não foi possível reconfirmar" }), {
@@ -68,12 +58,14 @@ export async function POST(request: NextRequest) {
 
     const verificacao = await verificarPagamento({ handle, orderNsu, transactionNsu, slug });
 
-    const valorEsperadoCentavos = Math.round(Number(pedido.valor) * 100);
+    // Soma o valor esperado de todos os pedidos no lote
+    const valorEsperadoTotalCentavos = pedidoRows.reduce((acc, p) => acc + Math.round(Number(p.valor) * 100), 0);
+
     const pagamentoConfere =
       verificacao.success &&
       verificacao.paid &&
-      (paidAmount === undefined || paidAmount >= valorEsperadoCentavos) &&
-      verificacao.paid_amount >= valorEsperadoCentavos;
+      (paidAmount === undefined || paidAmount >= valorEsperadoTotalCentavos) &&
+      verificacao.paid_amount >= valorEsperadoTotalCentavos;
 
     if (!pagamentoConfere) {
       return new Response(
@@ -82,11 +74,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const resultado = await confirmarPedidoPago(orderNsu, { confirmadoPor: "webhook", transactionNsu });
-    return new Response(JSON.stringify({ ok: resultado.ok }), { status: 200 });
+    // Confirma todos os pedidos encontrados
+    let ok = true;
+    for (const pedido of pedidoRows) {
+      if (pedido.status !== "pago") {
+        const resultado = await confirmarPedidoPago(pedido.id, { confirmadoPor: "webhook", transactionNsu });
+        if (!resultado.ok) ok = false;
+      }
+    }
+
+    return new Response(JSON.stringify({ ok }), { status: 200 });
   } catch (error) {
     if (error instanceof InfinitePayError) {
-      // Falha ao falar com a InfinitePay: transitório, vale a pena a InfinitePay reenviar.
       return new Response(JSON.stringify({ error: error.message }), { status: 502 });
     }
     return new Response(JSON.stringify({ error: "Erro interno" }), { status: 500 });

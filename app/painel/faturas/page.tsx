@@ -64,6 +64,7 @@ export default function Faturas() {
   const [error, setError] = useState<string | null>(null);
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [planoId, setPlanoId] = useState<string>("");
+  const [processandoPagamento, setProcessandoPagamento] = useState(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("empresa");
@@ -96,6 +97,44 @@ export default function Faturas() {
 
   function limparSelecao() {
     setSelecionadas(new Set());
+  }
+
+  async function handlePagarLote() {
+    if (selecionadas.size === 0 || !planoId) return;
+    
+    const raw = sessionStorage.getItem("empresa");
+    if (!raw) return;
+    const empresa = JSON.parse(raw) as { id: string };
+
+    setProcessandoPagamento(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/painel/faturas/pagar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          revenda_id: empresa.id,
+          plano_id: planoId,
+          filiais_ids: Array.from(selecionadas),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error ?? "Não foi possível processar o pagamento");
+      }
+
+      limparSelecao();
+      if (data.checkout_url) {
+        window.open(data.checkout_url, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Erro ao processar pagamento");
+    } finally {
+      setProcessandoPagamento(false);
+    }
   }
 
   const precisamRenovar = dados
@@ -265,14 +304,11 @@ export default function Faturas() {
                 <button 
                   type="button" 
                   className="faturas-acao-btn"
-                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
-                  onClick={() => {
-                    const total = formatarMoeda(selecionadas.size * precoPlano);
-                    alert(`Redirecionando para pagamento via InfinitePay...\n\nPlano: ${planoSelecionado?.nome.toUpperCase()}\nLicenças: ${selecionadas.size}\nTotal: ${total}`);
-                    limparSelecao();
-                  }}
+                  style={{ padding: '12px 32px', fontSize: '1.1rem', background: 'var(--brand)', color: '#fff', border: 'none', borderRadius: 8, cursor: processandoPagamento ? 'not-allowed' : 'pointer', fontWeight: 600, opacity: processandoPagamento ? 0.7 : 1 }}
+                  disabled={processandoPagamento}
+                  onClick={handlePagarLote}
                 >
-                  Renovar e Pagar
+                  {processandoPagamento ? "Gerando PIX..." : "Renovar e Pagar"}
                 </button>
               </div>
             )}

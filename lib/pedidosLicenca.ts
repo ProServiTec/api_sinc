@@ -20,7 +20,7 @@ export async function confirmarPedidoPago(
     await client.query("BEGIN");
 
     const { rows: pedidoRows } = await client.query(
-      `SELECT id, revenda_id, empresa_id, licenca_id, status
+      `SELECT id, revenda_id, empresa_id, filial_id, licenca_id, status
        FROM core.pedidos_licenca
        WHERE id = $1
        FOR UPDATE`,
@@ -44,11 +44,12 @@ export async function confirmarPedidoPago(
       return { ok: false, motivo: "pedido_cancelado" };
     }
 
+    // Se o pedido tiver filial_id (pagamento em lote), a licença já é atribuída direto à filial
     const { rows: licencaRows } = await client.query(
-      `INSERT INTO core.licencas_atribuidas (licenca_id, revenda_id, empresa_id)
-       VALUES ($1, $2, $3)
+      `INSERT INTO core.licencas_atribuidas (licenca_id, revenda_id, empresa_id, filial_id)
+       VALUES ($1, $2, $3, $4)
        RETURNING id`,
-      [pedido.licenca_id, pedido.revenda_id, pedido.empresa_id]
+      [pedido.licenca_id, pedido.revenda_id, pedido.empresa_id, pedido.filial_id ?? null]
     );
 
     await client.query(
