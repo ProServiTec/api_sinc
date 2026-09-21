@@ -16,13 +16,16 @@ function formatarMoedaCompacta(valor: number): string {
 }
 
 function formatarDiaCurto(diaIso: string): string {
-  // diaIso: "YYYY-MM-DD" (dia) ou "YYYY-MM" (mês)
+  // diaIso: "YYYY-MM-DD" (dia) ou "YYYY-MM" (mês) ou string normal
   const partes = diaIso.split("-");
   if (partes.length === 2) {
     const meses = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
     return meses[Number(partes[1]) - 1] ?? diaIso;
   }
-  return `${partes[2]}/${partes[1]}`;
+  if (partes.length >= 3) {
+    return `${partes[2].substring(0, 2)}/${partes[1]}`;
+  }
+  return diaIso;
 }
 
 /** Arredonda o teto do eixo Y para um número "redondo" (1, 2, 5 x 10^n). */
