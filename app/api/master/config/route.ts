@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { rows } = await pool.query(
-      `SELECT e.id, mc.chave_pix, mc.infinitepay_handle
+      `SELECT e.id, mc.infinitepay_handle
        FROM core.empresas e
        LEFT JOIN core.master_config mc ON mc.empresa_id = e.id
        WHERE e.id = $1 AND e.is_master = true`,
@@ -25,13 +25,10 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return new Response(
-      JSON.stringify({ chave_pix: rows[0].chave_pix, infinitepay_handle: rows[0].infinitepay_handle }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ infinitepay_handle: rows[0].infinitepay_handle }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     const classified = classifyError(error);
     return new Response(JSON.stringify(classified), {
@@ -53,17 +50,14 @@ export async function PATCH(request: NextRequest) {
     });
   }
 
-  const { empresa_id, chave_pix, infinitepay_handle } = (body ?? {}) as Record<string, unknown>;
+  const { empresa_id, infinitepay_handle } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof empresa_id !== "string" || empresa_id.trim() === "") {
       throw new SyncValidationError("empresa_id é obrigatório");
     }
-    if (typeof chave_pix !== "string" || chave_pix.trim() === "") {
-      throw new SyncValidationError("chave_pix é obrigatória");
-    }
-    if (infinitepay_handle !== undefined && typeof infinitepay_handle !== "string") {
-      throw new SyncValidationError("infinitepay_handle inválido");
+    if (typeof infinitepay_handle !== "string" || infinitepay_handle.trim() === "") {
+      throw new SyncValidationError("InfiniteTag é obrigatória");
     }
 
     const { rows: empresaRows } = await pool.query(
@@ -79,23 +73,25 @@ export async function PATCH(request: NextRequest) {
     }
 
     // handle sem o "$" do início, caso alguém cole a InfiniteTag do app assim
-    const handleNormalizado = (infinitepay_handle as string | undefined)?.trim().replace(/^\$/, "") || null;
+    const handleNormalizado = infinitepay_handle.trim().replace(/^\$/, "");
 
+    // chave_pix não é mais editada por aqui (a InfiniteTag é o que identifica
+    // a conta recebedora). Linhas novas entram com '' pra respeitar um
+    // eventual NOT NULL da coluna legada; linhas existentes ficam intactas.
     const { rows } = await pool.query(
       `INSERT INTO core.master_config (empresa_id, chave_pix, infinitepay_handle)
-       VALUES ($1, $2, $3)
+       VALUES ($1, '', $2)
        ON CONFLICT (empresa_id) DO UPDATE
-         SET chave_pix = EXCLUDED.chave_pix,
-             infinitepay_handle = COALESCE(EXCLUDED.infinitepay_handle, core.master_config.infinitepay_handle),
+         SET infinitepay_handle = EXCLUDED.infinitepay_handle,
              updated_at = now()
-       RETURNING chave_pix, infinitepay_handle`,
-      [empresa_id, chave_pix.trim(), handleNormalizado]
+       RETURNING infinitepay_handle`,
+      [empresa_id, handleNormalizado]
     );
 
-    return new Response(
-      JSON.stringify({ chave_pix: rows[0].chave_pix, infinitepay_handle: rows[0].infinitepay_handle }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ infinitepay_handle: rows[0].infinitepay_handle }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     const classified = classifyError(error);
     return new Response(JSON.stringify(classified), {

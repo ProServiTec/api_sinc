@@ -44,7 +44,7 @@ interface LicencaComprada {
 interface PedidoPendente {
   id: string;
   valor: string;
-  status: "pendente" | "pago" | "cancelado";
+  status: "aguardando_pagamento" | "pago" | "confirmado" | "cancelado";
   checkout_url: string | null;
   created_at: string;
   revenda_nome: string;

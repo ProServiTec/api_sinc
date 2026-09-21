@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import ModalPagamento from "../../components/ModalPagamento";
 import "../clients.css";
 import "../../painel.css";
 
@@ -122,13 +121,11 @@ export default function DetalheCliente() {
 
   const [pedidoPix, setPedidoPix] = useState<{
     id: string;
-    status: "pendente" | "pago" | "cancelado";
+    status: "aguardando_pagamento" | "pago" | "confirmado" | "cancelado";
     checkout_url: string | null;
     valor: string;
   } | null>(null);
   const [verificandoPagamento, setVerificandoPagamento] = useState(false);
-  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix");
-  const [modalCompraAberto, setModalCompraAberto] = useState(false);
 
   const [atualizando, setAtualizando] = useState(false);
   const [atualizarMensagem, setAtualizarMensagem] = useState<string | null>(null);
@@ -185,7 +182,7 @@ export default function DetalheCliente() {
       const response = await fetch(`/api/painel/clientes/${encodeURIComponent(params.token)}/licencas`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ revenda_id: revendaId, licenca_id: licencaSelecionada, metodo_pagamento: metodoPagamento }),
+        body: JSON.stringify({ revenda_id: revendaId, licenca_id: licencaSelecionada }),
       });
 
       const data = await response.json();
@@ -219,7 +216,7 @@ export default function DetalheCliente() {
 
       setPedidoPix(data.pedido);
 
-      if (data.pedido.status === "pago") {
+      if (data.pedido.status === "pago" || data.pedido.status === "confirmado") {
         setLicencaSelecionada("");
         await carregarDetalhe(revendaId);
       }
@@ -232,7 +229,7 @@ export default function DetalheCliente() {
   // cada 5s se já foi pago (o backend confirma via webhook da InfinitePay ou
   // confirmação manual do Master — este polling só reflete esse status).
   useEffect(() => {
-    if (!pedidoPix || pedidoPix.status !== "pendente") return;
+    if (!pedidoPix || pedidoPix.status !== "aguardando_pagamento") return;
     const intervalo = setInterval(verificarPagamentoPedido, 5000);
     return () => clearInterval(intervalo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -457,10 +454,12 @@ export default function DetalheCliente() {
                 </select>
                 <button
                   className="clients-add-licenca-btn"
-                  onClick={() => { setMetodoPagamento("pix"); setModalCompraAberto(true); }}
-                  disabled={!licencaSelecionada || !!pedidoPix}
+                  onClick={handleComprarLicenca}
+                  disabled={!licencaSelecionada || adicionando || !!pedidoPix}
                 >
-                  {planoSelecionado
+                  {adicionando
+                    ? "Gerando cobrança..."
+                    : planoSelecionado
                     ? `+ Nova Licença (${formatarMoeda(planoSelecionado.valor)})`
                     : "+ Nova Licença"}
                 </button>
@@ -472,7 +471,7 @@ export default function DetalheCliente() {
               <p className="painel-vazio">Nenhum plano de licença disponível no momento.</p>
             )}
 
-            {pedidoPix && pedidoPix.status === "pendente" && (
+            {pedidoPix && pedidoPix.status === "aguardando_pagamento" && (
               <div className="clients-detalhe-card" style={{ marginBottom: "1rem" }}>
                 <strong>Aguardando pagamento de {formatarMoeda(pedidoPix.valor)}...</strong>
                 <p className="painel-card-hint">
@@ -492,26 +491,7 @@ export default function DetalheCliente() {
               </div>
             )}
 
-            {modalCompraAberto && planoSelecionado && (
-              <ModalPagamento
-                resumo={
-                  <>
-                    {planoSelecionado.nome} · <strong>{formatarMoeda(planoSelecionado.valor)}</strong>
-                  </>
-                }
-                valorFormatado={formatarMoeda(planoSelecionado.valor)}
-                metodo={metodoPagamento}
-                onMetodoChange={setMetodoPagamento}
-                processando={adicionando}
-                onConfirmar={async () => {
-                  await handleComprarLicenca();
-                  setModalCompraAberto(false);
-                }}
-                onFechar={() => setModalCompraAberto(false)}
-              />
-            )}
-
-            {pedidoPix && pedidoPix.status === "pago" && (
+            {pedidoPix && (pedidoPix.status === "pago" || pedidoPix.status === "confirmado") && (
               <p className="master-config-sucesso">Pagamento confirmado! Licença liberada pro cliente.</p>
             )}
 

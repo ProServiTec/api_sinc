@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { revenda_id, plano_id, filiais_ids, metodo_pagamento } = (body ?? {}) as Record<string, unknown>;
+  const { revenda_id, plano_id, filiais_ids } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof revenda_id !== "string" || revenda_id.trim() === "") {
@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
         const pedidoId = randomUUID();
         // empresa_id do pedido é o empresa_id da filial (cliente final)
         await client.query(
-          `INSERT INTO core.pedidos_licenca (id, lote_id, revenda_id, empresa_id, filial_id, licenca_id, valor)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-          [pedidoId, loteId, revenda_id, filial.empresa_id, filial.id, licenca.id, precoUnitario]
+          `INSERT INTO core.pedidos_licenca (id, order_nsu, lote_id, revenda_id, empresa_id, filial_id, licenca_id, valor)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [pedidoId, pedidoId, loteId, revenda_id, filial.empresa_id, filial.id, licenca.id, precoUnitario]
         );
       }
       await client.query("COMMIT");
@@ -109,7 +109,6 @@ export async function POST(request: NextRequest) {
         orderNsu: loteId,
         redirectUrl: appUrl ? `${appUrl}/painel/faturas` : undefined,
         webhookUrl: appUrl ? `${appUrl}/api/webhooks/infinitepay` : undefined,
-        paymentMethod: metodo_pagamento === "cartao" ? "credit_card" : "pix",
       });
 
       // Atualiza os pedidos do lote com as informações do link

@@ -34,7 +34,7 @@ export async function confirmarPedidoPago(
 
     const pedido = pedidoRows[0];
 
-    if (pedido.status === "pago") {
+    if (pedido.status === "pago" || pedido.status === "confirmado") {
       await client.query("ROLLBACK");
       return { ok: true, jaConfirmado: true };
     }
@@ -58,7 +58,9 @@ export async function confirmarPedidoPago(
            paid_at = now(),
            transaction_nsu = COALESCE($2, transaction_nsu),
            licenca_atribuida_id = $3,
-           confirmado_por = $4
+           confirmed_at = now(),
+           updated_at = now(),
+           payload_infinitepay = COALESCE(payload_infinitepay, '{}'::jsonb) || jsonb_build_object('confirmado_por', $4::text)
        WHERE id = $1`,
       [pedidoId, opts.transactionNsu ?? null, licencaRows[0].id, opts.confirmadoPor]
     );

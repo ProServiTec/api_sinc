@@ -13,7 +13,6 @@ interface EmpresaSessao {
 
 export default function MasterConfiguracoes() {
   const [empresaId, setEmpresaId] = useState<string | null>(null);
-  const [chavePix, setChavePix] = useState("");
   const [infinitepayHandle, setInfinitepayHandle] = useState("");
   const [loading, setLoading] = useState(true);
   const [salvando, setSalvando] = useState(false);
@@ -36,7 +35,6 @@ export default function MasterConfiguracoes() {
         if (!response.ok) {
           throw new Error(data.error ?? "Não foi possível carregar as configurações");
         }
-        setChavePix(data.chave_pix ?? "");
         setInfinitepayHandle(data.infinitepay_handle ?? "");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Não foi possível carregar as configurações");
@@ -58,11 +56,7 @@ export default function MasterConfiguracoes() {
       const response = await fetch("/api/master/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          empresa_id: empresaId,
-          chave_pix: chavePix,
-          infinitepay_handle: infinitepayHandle,
-        }),
+        body: JSON.stringify({ empresa_id: empresaId, infinitepay_handle: infinitepayHandle }),
       });
 
       const data = await response.json();
@@ -84,7 +78,7 @@ export default function MasterConfiguracoes() {
     <>
       <header className="painel-header">
         <h1>Configurações</h1>
-        <p>Chave PIX usada pelos parceiros para pagar as licenças</p>
+        <p>Conta que recebe os pagamentos das licenças compradas pelos parceiros</p>
       </header>
 
       {loading && <p className="painel-loading">Carregando...</p>}
@@ -94,23 +88,13 @@ export default function MasterConfiguracoes() {
           <h2>Recebimento PIX (InfinitePay)</h2>
           <form className="master-config-form" onSubmit={handleSubmit}>
             <label className="clients-field">
-              Chave PIX
-              <input
-                type="text"
-                value={chavePix}
-                onChange={(e) => setChavePix(e.target.value)}
-                placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
-                required
-              />
-            </label>
-
-            <label className="clients-field">
               InfiniteTag (handle da InfinitePay)
               <input
                 type="text"
                 value={infinitepayHandle}
                 onChange={(e) => setInfinitepayHandle(e.target.value)}
                 placeholder="seu-handle (sem o $ do início)"
+                required
               />
             </label>
             <p className="painel-card-hint">

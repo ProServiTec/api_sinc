@@ -57,7 +57,7 @@ export async function GET() {
          JOIN core.empresas r ON r.id = pl.revenda_id
          JOIN core.empresas e ON e.id = pl.empresa_id
          JOIN core.licencas l ON l.id = pl.licenca_id
-         WHERE pl.status = 'pendente'
+         WHERE pl.status = 'aguardando_pagamento'
          ORDER BY pl.created_at DESC`
       ),
     ]);

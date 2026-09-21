@@ -22,7 +22,6 @@ interface CriarLinkParams {
   redirectUrl?: string;
   webhookUrl?: string;
   /** "pix" envia só PIX; "credit_card" envia só cartão; undefined deixa a InfinitePay exibir ambos */
-  paymentMethod?: "pix" | "credit_card";
 }
 
 interface CriarLinkResultado {
@@ -48,7 +47,6 @@ export async function criarLinkPagamento(params: CriarLinkParams): Promise<Criar
       order_nsu: params.orderNsu,
       ...(params.redirectUrl ? { redirect_url: params.redirectUrl } : {}),
       ...(params.webhookUrl ? { webhook_url: params.webhookUrl } : {}),
-      ...(params.paymentMethod ? { payment_method: params.paymentMethod } : {}),
     }),
   });
 

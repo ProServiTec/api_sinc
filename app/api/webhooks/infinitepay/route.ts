@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Se todos já estiverem pagos, apenas retorna OK (idempotência)
-    if (pedidoRows.every((p) => p.status === "pago")) {
+    if (pedidoRows.every((p) => p.status === "pago" || p.status === "confirmado")) {
       return new Response(JSON.stringify({ ok: true, ja_confirmado: true }), { status: 200 });
     }
 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Confirma todos os pedidos encontrados
     let ok = true;
     for (const pedido of pedidoRows) {
-      if (pedido.status !== "pago") {
+      if (pedido.status !== "pago" && pedido.status !== "confirmado") {
         const resultado = await confirmarPedidoPago(pedido.id, { confirmadoPor: "webhook", transactionNsu });
         if (!resultado.ok) ok = false;
       }

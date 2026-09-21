@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import ModalPagamento from "../components/ModalPagamento";
 import "./faturas.css";
 
 interface Licenca {
@@ -66,8 +65,6 @@ export default function Faturas() {
   const [selecionadas, setSelecionadas] = useState<Set<string>>(new Set());
   const [planoId, setPlanoId] = useState<string>("");
   const [processandoPagamento, setProcessandoPagamento] = useState(false);
-  const [metodoPagamento, setMetodoPagamento] = useState<"pix" | "cartao">("pix");
-  const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("empresa");
@@ -120,7 +117,6 @@ export default function Faturas() {
           revenda_id: empresa.id,
           plano_id: planoId,
           filiais_ids: Array.from(selecionadas),
-          metodo_pagamento: metodoPagamento,
         }),
       });
 
@@ -308,7 +304,8 @@ export default function Faturas() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setMetodoPagamento("pix"); setModalAberto(true); }}
+                  onClick={handlePagarLote}
+                  disabled={processandoPagamento}
                   style={{
                     padding: '12px 28px', fontSize: '1rem',
                     background: 'var(--brand)', color: '#fff',
@@ -317,29 +314,11 @@ export default function Faturas() {
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}
                 >
-                  Renovar e Pagar →
+                  {processandoPagamento ? "Gerando cobrança..." : "Renovar e Pagar →"}
                 </button>
               </div>
             )}
 
-            {modalAberto && (
-              <ModalPagamento
-                resumo={
-                  <>
-                    {selecionadas.size} licença(s) · Total: <strong>{formatarMoeda(selecionadas.size * precoPlano)}</strong>
-                  </>
-                }
-                valorFormatado={formatarMoeda(selecionadas.size * precoPlano)}
-                metodo={metodoPagamento}
-                onMetodoChange={setMetodoPagamento}
-                processando={processandoPagamento}
-                onConfirmar={async () => {
-                  await handlePagarLote();
-                  setModalAberto(false);
-                }}
-                onFechar={() => setModalAberto(false)}
-              />
-            )}
           </section>
         </>
       )}
