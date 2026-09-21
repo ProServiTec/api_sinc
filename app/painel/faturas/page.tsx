@@ -12,7 +12,7 @@ interface Licenca {
   codigo?: string;
   dispositivo_nome?: string;
   vence_em?: string;
-  plano?: string;
+  plano_nome?: string;
   valor?: number;
 }
 
@@ -234,7 +234,7 @@ export default function Faturas() {
                             </span>
                           );
                         })() : (
-                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{planoSelecionado?.nome ?? "Mensal"}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{l.plano_nome ?? "Sem plano"}</span>
                         )}
                       </div>
                     </div>

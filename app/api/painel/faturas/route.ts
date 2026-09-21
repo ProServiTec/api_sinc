@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
         [empresaId]
       ),
       pool.query(
-        `SELECT f.id, f.nome, f.ativo, f.created_at, e.nome AS cliente_nome
+        `SELECT f.id, f.nome, f.ativo, f.created_at, e.nome AS cliente_nome,
+           COALESCE(
+             (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.filial_id = f.id ORDER BY la.created_at DESC LIMIT 1),
+             (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.empresa_id = f.empresa_id ORDER BY la.created_at DESC LIMIT 1)
+           ) as plano_nome
          FROM core.filiais f
          JOIN core.empresas e ON e.id = f.empresa_id
          WHERE e.is_admin = false
