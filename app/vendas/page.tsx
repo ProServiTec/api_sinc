@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BarChart, DonutChart, LineChart } from "./Charts";
 import "./vendas.css";
 import ThemeSettings from "../components/ThemeSettings";
+import { useAreaTheme } from "../../lib/useAreaTheme";
 
 interface EmpresaSessao {
   id: string;
@@ -1563,6 +1564,7 @@ function formatarRelativo(iso: string) {
 
 export default function Vendas() {
   const router = useRouter();
+  useAreaTheme("vendas");
   // Começa igual em servidor e cliente (null) — o sessionStorage só existe no
   // navegador, então é lido depois de montar, nunca no render inicial (evita
   // hydration mismatch).
@@ -1800,7 +1802,7 @@ export default function Vendas() {
 
       <main className="vendas-main">
         {aba === "aparencia" ? (
-          <ThemeSettings />
+          <ThemeSettings area="vendas" />
         ) : aba === "usuarios" && empresa ? (
           <UsuariosPanel empresaId={empresa.id} />
         ) : !filiaisProntas ? (

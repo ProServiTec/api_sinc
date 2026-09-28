@@ -173,7 +173,7 @@ export default function Perfil() {
       </section>
 
       {/* ── Aparência ── */}
-      <ThemeSettings />
+      <ThemeSettings area="painel" />
     </>
   );
 }

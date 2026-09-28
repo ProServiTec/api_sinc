@@ -3,6 +3,7 @@
 import { SubmitEvent, useEffect, useState } from "react";
 import "../../painel/clients/clients.css";
 import "../master.css";
+import ThemeSettings from "../../components/ThemeSettings";
 
 interface EmpresaSessao {
   id: string;
@@ -113,6 +114,9 @@ export default function MasterConfiguracoes() {
           </form>
         </section>
       )}
+
+      {/* ── Aparência ── */}
+      <ThemeSettings area="master" />
     </>
   );
 }

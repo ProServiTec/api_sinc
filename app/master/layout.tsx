@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import "../painel/painel.css";
 import "./master.css";
+import { useAreaTheme } from "../../lib/useAreaTheme";
 
 interface EmpresaSessao {
   id: string;
@@ -68,6 +69,8 @@ export default function MasterLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const [empresa, setEmpresa] = useState<EmpresaSessao | null>(null);
   const [pronto, setPronto] = useState(false);
+
+  useAreaTheme("master");
 
   useEffect(() => {
     Promise.resolve().then(() => {

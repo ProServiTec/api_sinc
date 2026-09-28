@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import "../painel/painel.css";
+import { useAreaTheme } from "../../lib/useAreaTheme";
 
 interface EmpresaSessao {
   id: string;
@@ -53,6 +54,8 @@ export default function PerfilLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const [empresa, setEmpresa] = useState<EmpresaSessao | null>(null);
   const [pronto, setPronto] = useState(false);
+
+  useAreaTheme("painel");
 
   useEffect(() => {
     Promise.resolve().then(() => {

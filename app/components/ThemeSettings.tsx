@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import "./theme-settings.css";
-import { DEFAULT_THEME, readThemePrefs, saveThemePrefs, ThemePrefs } from "../../lib/theme";
+import { DEFAULT_THEME, readThemePrefs, saveThemePrefs, ThemeArea, ThemePrefs } from "../../lib/theme";
 
 const CORES_PRESET = [
   "#2196F3", // azul Zaya (padrão)
@@ -13,19 +13,26 @@ const CORES_PRESET = [
   "#16A34A", // verde
 ];
 
-export default function ThemeSettings() {
+interface ThemeSettingsProps {
+  // Área de login dona dessa preferência (vendedor, cliente/admin ou
+  // master). Cada área guarda sua própria escolha — trocar o tema numa
+  // área não deve mudar a aparência das outras no mesmo navegador.
+  area: ThemeArea;
+}
+
+export default function ThemeSettings({ area }: ThemeSettingsProps) {
   const [prefs, setPrefs] = useState<ThemePrefs>(DEFAULT_THEME);
   const [pronto, setPronto] = useState(false);
 
   useEffect(() => {
-    setPrefs(readThemePrefs());
+    setPrefs(readThemePrefs(area));
     setPronto(true);
-  }, []);
+  }, [area]);
 
   function atualizar(next: Partial<ThemePrefs>) {
     setPrefs((atual) => {
       const novo = { ...atual, ...next };
-      saveThemePrefs(novo);
+      saveThemePrefs(area, novo);
       return novo;
     });
   }
@@ -91,7 +98,7 @@ export default function ThemeSettings() {
       </button>
 
       <p className="theme-settings-hint">
-        A aparência é salva neste navegador/dispositivo.
+        A aparência é salva neste navegador/dispositivo e vale só pra esta área.
       </p>
     </section>
   );
