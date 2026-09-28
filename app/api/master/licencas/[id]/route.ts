@@ -102,6 +102,17 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
 
     return new Response(null, { status: 204 });
   } catch (error) {
+    // Violação de FK aqui é quase sempre "esse plano tem licenças já
+    // atribuídas a clientes" — mensagem genérica do classifyError confunde,
+    // então troca por algo específico desse contexto.
+    if (error && typeof error === "object" && "code" in error && (error as { code?: string }).code === "23503") {
+      return new Response(
+        JSON.stringify({
+          error: "Não é possível apagar: esse plano já tem licenças atribuídas a clientes. Desative-o em vez de apagar.",
+        }),
+        { status: 409, headers: { "Content-Type": "application/json" } }
+      );
+    }
     const classified = classifyError(error);
     return new Response(JSON.stringify(classified), {
       status: classified.status,
