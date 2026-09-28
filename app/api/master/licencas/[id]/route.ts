@@ -27,8 +27,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (typeof nome !== "string" || nome.trim() === "") {
       throw new SyncValidationError("nome é obrigatório");
     }
-    if (typeof valor !== "number" || !Number.isFinite(valor) || valor <= 0) {
-      throw new SyncValidationError("valor é obrigatório e deve ser maior que zero");
+    if (typeof valor !== "number" || !Number.isFinite(valor) || valor < 0) {
+      throw new SyncValidationError("valor é obrigatório e não pode ser negativo (0 = plano gratuito)");
     }
     if (typeof periodicidade !== "string" || !PERIODICIDADES.has(periodicidade)) {
       throw new SyncValidationError("periodicidade deve ser 'mensal' ou 'anual'");

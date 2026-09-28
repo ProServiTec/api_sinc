@@ -28,7 +28,7 @@ async function suportaSubcontas(): Promise<boolean> {
 
 function respostaCredenciaisInvalidas() {
   return new Response(
-    JSON.stringify({ status: 401, tipo: "credenciais_invalidas", error: "CPF/CNPJ ou senha inválidos" }),
+    JSON.stringify({ status: 401, tipo: "credenciais_invalidas", error: "Credenciais inválidas" }),
     { status: 401, headers: { "Content-Type": "application/json" } }
   );
 }
@@ -45,30 +45,34 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { cpf_cnpj, senha } = (body ?? {}) as Record<string, unknown>;
+  const { cpf_cnpj, email, senha } = (body ?? {}) as Record<string, unknown>;
 
   try {
-    if (typeof cpf_cnpj !== "string" || onlyDigits(cpf_cnpj) === "") {
-      throw new SyncValidationError("cpf_cnpj é obrigatório");
+    const temCpfCnpj = typeof cpf_cnpj === "string" && onlyDigits(cpf_cnpj) !== "";
+    const temEmail = typeof email === "string" && email.trim() !== "";
+    if (!temCpfCnpj && !temEmail) {
+      throw new SyncValidationError("Informe o CPF/CNPJ ou o e-mail");
     }
     if (typeof senha !== "string" || senha === "") {
       throw new SyncValidationError("senha é obrigatória");
     }
 
     const comSubcontas = await suportaSubcontas();
+    const filtro = temEmail ? "lower(email) = lower($1)" : "regexp_replace(cpf_cnpj, '[^0-9]', '', 'g') = $1";
+    const valorFiltro = temEmail ? (email as string).trim() : onlyDigits(cpf_cnpj as string);
 
     const { rows } = await pool.query(
       comSubcontas
         ? `SELECT id, nome, razao_social, cpf_cnpj, ativo, is_admin, is_master, created_at, updated_at,
                   password, senha_temporaria
            FROM core.empresas
-           WHERE regexp_replace(cpf_cnpj, '[^0-9]', '', 'g') = $1
+           WHERE ${filtro}
              AND ativo = true`
         : `SELECT id, nome, razao_social, cpf_cnpj, ativo, is_admin, is_master, created_at, updated_at, password
            FROM core.empresas
-           WHERE regexp_replace(cpf_cnpj, '[^0-9]', '', 'g') = $1
+           WHERE ${filtro}
              AND ativo = true`,
-      [onlyDigits(cpf_cnpj)]
+      [valorFiltro]
     );
 
     const registro = rows[0];

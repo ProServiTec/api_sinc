@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 import { criarLinkPagamento, InfinitePayError } from "@/lib/infinitepay";
+import { confirmarPedidoPago } from "@/lib/pedidosLicenca";
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -51,7 +52,8 @@ export async function POST(request: NextRequest) {
        LIMIT 1`
     );
     const handle = configRows[0]?.infinitepay_handle as string | undefined;
-    if (!handle) {
+    const gratis = Number(licenca.valor) <= 0;
+    if (!gratis && !handle) {
       throw new SyncValidationError(
         "Pagamento PIX não configurado: peça pro Master cadastrar a InfiniteTag em Configurações"
       );
@@ -75,6 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const loteId = randomUUID();
+    const pedidosCriados: string[] = [];
     const appUrl = process.env.APP_URL?.replace(/\/$/, "");
     const precoUnitario = Number(licenca.valor);
     const precoCentavos = Math.round(precoUnitario * 100);
@@ -86,6 +89,7 @@ export async function POST(request: NextRequest) {
       await client.query("BEGIN");
       for (const filial of filiaisEncontradas) {
         const pedidoId = randomUUID();
+        pedidosCriados.push(pedidoId);
         // empresa_id do pedido é o empresa_id da filial (cliente final)
         await client.query(
           `INSERT INTO core.pedidos_licenca (id, order_nsu, lote_id, revenda_id, empresa_id, filial_id, licenca_id, valor)
@@ -101,10 +105,21 @@ export async function POST(request: NextRequest) {
       client.release();
     }
 
+    // Plano gratuito (ex.: licença de teste): confirma direto, sem InfinitePay.
+    if (gratis) {
+      for (const pedidoId of pedidosCriados) {
+        await confirmarPedidoPago(pedidoId, { confirmadoPor: "manual" });
+      }
+      return new Response(JSON.stringify({ checkout_url: null, gratis: true }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     // Gera o link de checkout agrupado (loteId)
     try {
       const link = await criarLinkPagamento({
-        handle,
+        handle: handle as string,
         items: [{ quantity: filiaisEncontradas.length, price: precoCentavos, description: `Renovação: ${licenca.nome}` }],
         orderNsu: loteId,
         redirectUrl: appUrl ? `${appUrl}/painel/faturas` : undefined,

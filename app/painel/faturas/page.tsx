@@ -129,6 +129,8 @@ export default function Faturas() {
       limparSelecao();
       if (data.checkout_url) {
         window.open(data.checkout_url, "_blank", "noopener,noreferrer");
+      } else if (data.gratis) {
+        window.location.reload();
       }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Erro ao processar pagamento");

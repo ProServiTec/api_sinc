@@ -117,6 +117,54 @@
   box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.18);
 }
 
+/* ── Alternar CPF/CNPJ vs e-mail ─────────────────────────── */
+
+.login-modo-toggle {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.25rem;
+  border-radius: 9px;
+  background: var(--surface-muted, #f1f5f9);
+}
+
+.login-modo-toggle button {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.login-modo-toggle button.login-modo-ativo {
+  background: var(--surface);
+  color: var(--brand-dark);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Lembrar-me ──────────────────────────────────────────── */
+
+.login-lembrar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.login-lembrar input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
 /* ── Botão principal ─────────────────────────────────────── */
 
 .login-form button {

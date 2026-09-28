@@ -223,6 +223,8 @@ function NovoClienteModal({
   const [nome, setNome] = useState("");
   const [razaoSocial, setRazaoSocial] = useState("");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [email, setEmail] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [limiteUsuarios, setLimiteUsuarios] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -252,6 +254,8 @@ function NovoClienteModal({
           nome,
           razao_social: razaoSocial,
           cpf_cnpj: cpfCnpj,
+          email: email.trim() || null,
+          telefone: telefone.trim() || null,
           revenda_id: revendaId,
           limite_usuarios: limiteUsuarios.trim() === "" ? null : Number(limiteUsuarios),
         }),
@@ -343,6 +347,16 @@ function NovoClienteModal({
         <label className="clients-field">
           CPF/CNPJ
           <input type="text" value={cpfCnpj} onChange={(e) => setCpfCnpj(e.target.value)} required />
+        </label>
+
+        <label className="clients-field">
+          E-mail de contato (opcional)
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="contato@cliente.com" />
+        </label>
+
+        <label className="clients-field">
+          Telefone de contato (opcional)
+          <input type="tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(11) 91234-5678" />
         </label>
 
         <label className="clients-field">

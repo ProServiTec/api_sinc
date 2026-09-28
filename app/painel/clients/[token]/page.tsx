@@ -60,6 +60,8 @@ interface Detalhe {
     nome: string;
     razao_social: string | null;
     cpf_cnpj: string | null;
+    email: string | null;
+    telefone: string | null;
     ativo: boolean;
     created_at: string;
   };
@@ -110,6 +112,8 @@ export default function DetalheCliente() {
   const [editNome, setEditNome] = useState("");
   const [editRazaoSocial, setEditRazaoSocial] = useState("");
   const [editCpfCnpj, setEditCpfCnpj] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTelefone, setEditTelefone] = useState("");
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
@@ -195,6 +199,9 @@ export default function DetalheCliente() {
       setPedidoPix(data.pedido);
       if (data.pedido.checkout_url) {
         window.open(data.pedido.checkout_url, "_blank", "noopener,noreferrer");
+      } else if (data.pedido.status === "pago") {
+        setLicencaSelecionada("");
+        await carregarDetalhe(revendaId);
       }
     } catch {
       setAddError("Não foi possível conectar ao servidor");
@@ -286,6 +293,8 @@ export default function DetalheCliente() {
     setEditNome(detalhe.cliente.nome);
     setEditRazaoSocial(detalhe.cliente.razao_social ?? "");
     setEditCpfCnpj(detalhe.cliente.cpf_cnpj ?? "");
+    setEditEmail(detalhe.cliente.email ?? "");
+    setEditTelefone(detalhe.cliente.telefone ?? "");
     setEditError(null);
     setEditando(true);
   }
@@ -304,6 +313,8 @@ export default function DetalheCliente() {
           nome: editNome,
           razao_social: editRazaoSocial,
           cpf_cnpj: editCpfCnpj,
+          email: editEmail,
+          telefone: editTelefone,
         }),
       });
       const data = await response.json();
@@ -406,6 +417,24 @@ export default function DetalheCliente() {
                   Nome fantasia
                   <input type="text" value={editNome} onChange={(e) => setEditNome(e.target.value)} />
                 </label>
+                <label className="clients-field">
+                  E-mail de contato
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="contato@cliente.com"
+                  />
+                </label>
+                <label className="clients-field">
+                  Telefone de contato
+                  <input
+                    type="tel"
+                    value={editTelefone}
+                    onChange={(e) => setEditTelefone(e.target.value)}
+                    placeholder="(11) 91234-5678"
+                  />
+                </label>
 
                 {editError && <p className="clients-error">{editError}</p>}
 
@@ -431,6 +460,14 @@ export default function DetalheCliente() {
                 <div>
                   <span className="clients-dados-label">Nome fantasia</span>
                   <strong>{detalhe.cliente.nome}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">E-mail</span>
+                  <strong>{detalhe.cliente.email ?? "—"}</strong>
+                </div>
+                <div>
+                  <span className="clients-dados-label">Telefone</span>
+                  <strong>{detalhe.cliente.telefone ?? "—"}</strong>
                 </div>
               </div>
             )}

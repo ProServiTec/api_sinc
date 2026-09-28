@@ -226,7 +226,7 @@ function LicencaModal({
           Valor (R$)
           <input
             type="number"
-            min="0.01"
+            min="0"
             step="0.01"
             value={valor}
             onChange={(e) => setValor(e.target.value)}

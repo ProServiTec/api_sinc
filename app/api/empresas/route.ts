@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { nome, razao_social, cpf_cnpj, revenda_id, limite_usuarios } = (body ?? {}) as Record<string, unknown>;
+  const { nome, razao_social, cpf_cnpj, email, telefone, revenda_id, limite_usuarios } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
 
   try {
     if (typeof nome !== "string" || nome.trim() === "") {
@@ -27,6 +30,12 @@ export async function POST(request: NextRequest) {
     }
     if (typeof cpf_cnpj !== "string" || onlyDigits(cpf_cnpj) === "") {
       throw new SyncValidationError("cpf_cnpj é obrigatório");
+    }
+    if (email !== undefined && email !== null && typeof email !== "string") {
+      throw new SyncValidationError("email inválido");
+    }
+    if (telefone !== undefined && telefone !== null && typeof telefone !== "string") {
+      throw new SyncValidationError("telefone inválido");
     }
     if (revenda_id !== undefined && revenda_id !== null && typeof revenda_id !== "string") {
       throw new SyncValidationError("revenda_id inválido");
@@ -59,12 +68,23 @@ export async function POST(request: NextRequest) {
     const senhaHash = await hashPassword(senha);
     const revendaIdValor = typeof revenda_id === "string" && revenda_id.trim() !== "" ? revenda_id : null;
     const limiteUsuariosValor = typeof limite_usuarios === "number" ? limite_usuarios : null;
+    const emailValor = (email as string | undefined)?.trim() || null;
+    const telefoneValor = (telefone as string | undefined)?.trim() || null;
 
     const { rows } = await pool.query(
-      `INSERT INTO core.empresas (nome, razao_social, cpf_cnpj, password, revenda_id, senha_temporaria, limite_usuarios)
-       VALUES ($1, $2, $3, $4, $5, true, $6)
-       RETURNING id, nome, razao_social, cpf_cnpj, ativo, limite_usuarios, created_at, updated_at`,
-      [nome.trim(), razao_social.trim(), onlyDigits(cpf_cnpj), senhaHash, revendaIdValor, limiteUsuariosValor]
+      `INSERT INTO core.empresas (nome, razao_social, cpf_cnpj, email, telefone, password, revenda_id, senha_temporaria, limite_usuarios)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8)
+       RETURNING id, nome, razao_social, cpf_cnpj, email, telefone, ativo, limite_usuarios, created_at, updated_at`,
+      [
+        nome.trim(),
+        razao_social.trim(),
+        onlyDigits(cpf_cnpj),
+        emailValor,
+        telefoneValor,
+        senhaHash,
+        revendaIdValor,
+        limiteUsuariosValor,
+      ]
     );
 
     // A senha em texto puro só existe aqui — o banco guarda só o hash. Copie

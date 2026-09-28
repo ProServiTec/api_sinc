@@ -4,6 +4,7 @@ import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 import { decryptToken } from "@/lib/clientsLink";
 import { criarLinkPagamento, InfinitePayError } from "@/lib/infinitepay";
+import { confirmarPedidoPago } from "@/lib/pedidosLicenca";
 
 /**
  * Compra de licença agora é em duas etapas: este endpoint cria um PEDIDO
@@ -73,7 +74,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
        LIMIT 1`
     );
     const handle = configRows[0]?.infinitepay_handle as string | undefined;
-    if (!handle) {
+    const gratis = Number(licenca.valor) <= 0;
+    if (!gratis && !handle) {
       throw new SyncValidationError(
         "Pagamento PIX não configurado: peça pro Master cadastrar a InfiniteTag em Configurações"
       );
@@ -91,12 +93,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     );
     const pedido = pedidoRows[0];
 
+    // Plano gratuito (ex.: licença de teste): não passa pela InfinitePay, o
+    // pedido já nasce pago e a licença é atribuída na hora.
+    if (gratis) {
+      await confirmarPedidoPago(pedido.id, { confirmadoPor: "manual" });
+      return new Response(JSON.stringify({ pedido: { ...pedido, status: "pago", checkout_url: null } }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const appUrl = process.env.APP_URL?.replace(/\/$/, "");
     const valorCentavos = Math.round(Number(licenca.valor) * 100);
 
     try {
       const link = await criarLinkPagamento({
-        handle,
+        handle: handle as string,
         items: [{ quantity: 1, price: valorCentavos, description: licenca.nome }],
         orderNsu: pedido.id,
         redirectUrl: appUrl ? `${appUrl}/painel/clients/${token}?pedido=${pedido.id}` : undefined,

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const { rows: clienteRows } = await pool.query(
-      `SELECT id, nome, razao_social, cpf_cnpj, ativo, created_at
+      `SELECT id, nome, razao_social, cpf_cnpj, email, telefone, ativo, created_at
        FROM core.empresas
        WHERE cpf_cnpj = $1 AND is_admin = false AND revenda_id = $2
        LIMIT 1`,
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
   }
 
-  const { revenda_id, nome, razao_social, cpf_cnpj } = (body ?? {}) as Record<string, unknown>;
+  const { revenda_id, nome, razao_social, cpf_cnpj, email, telefone } = (body ?? {}) as Record<string, unknown>;
 
   try {
     if (typeof revenda_id !== "string" || revenda_id.trim() === "") {
@@ -150,6 +150,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     if (typeof cpf_cnpj !== "string" || onlyDigits(cpf_cnpj) === "") {
       throw new SyncValidationError("cpf_cnpj é obrigatório");
+    }
+    if (email !== undefined && email !== null && typeof email !== "string") {
+      throw new SyncValidationError("email inválido");
+    }
+    if (telefone !== undefined && telefone !== null && typeof telefone !== "string") {
+      throw new SyncValidationError("telefone inválido");
     }
 
     const cpfCnpjAtual = decryptToken(token);
@@ -169,13 +175,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const cpfCnpjNovo = onlyDigits(cpf_cnpj);
+    const emailValor = (email as string | undefined)?.trim() || null;
+    const telefoneValor = (telefone as string | undefined)?.trim() || null;
 
     const { rows } = await pool.query(
       `UPDATE core.empresas
-       SET nome = $1, razao_social = $2, cpf_cnpj = $3, updated_at = now()
-       WHERE id = $4
-       RETURNING id, nome, razao_social, cpf_cnpj, ativo, created_at`,
-      [nome.trim(), razao_social.trim(), cpfCnpjNovo, clienteRows[0].id]
+       SET nome = $1, razao_social = $2, cpf_cnpj = $3, email = $4, telefone = $5, updated_at = now()
+       WHERE id = $6
+       RETURNING id, nome, razao_social, cpf_cnpj, email, telefone, ativo, created_at`,
+      [nome.trim(), razao_social.trim(), cpfCnpjNovo, emailValor, telefoneValor, clienteRows[0].id]
     );
 
     return new Response(

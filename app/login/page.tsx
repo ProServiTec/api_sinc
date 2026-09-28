@@ -1,6 +1,6 @@
 "use client";
 
-import { SubmitEvent, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import "./login.css";
 
@@ -30,12 +30,33 @@ interface UsuarioSubconta {
   };
 }
 
+const CHAVE_LEMBRAR = "sinc_login_lembrar";
+
 export default function Login() {
   const router = useRouter();
+  const [modoLogin, setModoLogin] = useState<"cpf_cnpj" | "email">("cpf_cnpj");
   const [cpfCnpj, setCpfCnpj] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [lembrar, setLembrar] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Carrega o identificador lembrado (nunca a senha) — só depois de montar,
+  // pra não dar hydration mismatch entre servidor e cliente.
+  useEffect(() => {
+    try {
+      const salvo = localStorage.getItem(CHAVE_LEMBRAR);
+      if (!salvo) return;
+      const dados = JSON.parse(salvo) as { modo: "cpf_cnpj" | "email"; valor: string };
+      setModoLogin(dados.modo);
+      if (dados.modo === "email") setEmail(dados.valor);
+      else setCpfCnpj(dados.valor);
+      setLembrar(true);
+    } catch {
+      // localStorage indisponível ou dado corrompido — ignora, login fica em branco.
+    }
+  }, []);
 
   // Só aparece quando o Master loga com a senha temporária gerada
   // automaticamente na criação do cliente (ver POST /api/empresas).
@@ -66,10 +87,9 @@ export default function Login() {
       const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cpf_cnpj: cpfCnpj,
-          senha,
-        }),
+        body: JSON.stringify(
+          modoLogin === "email" ? { email, senha } : { cpf_cnpj: cpfCnpj, senha }
+        ),
       });
 
       const data = await response.json();
@@ -77,6 +97,20 @@ export default function Login() {
       if (!response.ok) {
         setError(data.error ?? "Não foi possível efetuar o login");
         return;
+      }
+
+      // Lembra só o identificador (CPF/CNPJ ou e-mail) — nunca a senha.
+      try {
+        if (lembrar) {
+          localStorage.setItem(
+            CHAVE_LEMBRAR,
+            JSON.stringify({ modo: modoLogin, valor: modoLogin === "email" ? email : cpfCnpj })
+          );
+        } else {
+          localStorage.removeItem(CHAVE_LEMBRAR);
+        }
+      } catch {
+        // localStorage indisponível — não bloqueia o login.
       }
 
       const empresa = data.empresa as Empresa;
@@ -189,18 +223,51 @@ export default function Login() {
           <h1>Entrar</h1>
           <p className="login-subtitle">Acesse com os dados da sua empresa</p>
 
-          <label className="login-field">
-            CPF/CNPJ
-            <input
-              type="text"
-              value={cpfCnpj}
-              onChange={(e) => setCpfCnpj(e.target.value)}
-              placeholder="CPF ou CNPJ da empresa"
-              inputMode="numeric"
-              autoComplete="off"
-              required
-            />
-          </label>
+          <div className="login-modo-toggle" role="radiogroup" aria-label="Entrar com">
+            <button
+              type="button"
+              className={modoLogin === "cpf_cnpj" ? "login-modo-ativo" : ""}
+              aria-pressed={modoLogin === "cpf_cnpj"}
+              onClick={() => setModoLogin("cpf_cnpj")}
+            >
+              CPF/CNPJ
+            </button>
+            <button
+              type="button"
+              className={modoLogin === "email" ? "login-modo-ativo" : ""}
+              aria-pressed={modoLogin === "email"}
+              onClick={() => setModoLogin("email")}
+            >
+              E-mail
+            </button>
+          </div>
+
+          {modoLogin === "cpf_cnpj" ? (
+            <label className="login-field">
+              CPF/CNPJ
+              <input
+                type="text"
+                value={cpfCnpj}
+                onChange={(e) => setCpfCnpj(e.target.value)}
+                placeholder="CPF ou CNPJ da empresa"
+                inputMode="numeric"
+                autoComplete="off"
+                required
+              />
+            </label>
+          ) : (
+            <label className="login-field">
+              E-mail
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                autoComplete="username"
+                required
+              />
+            </label>
+          )}
 
           <label className="login-field">
             Senha
@@ -212,6 +279,11 @@ export default function Login() {
               autoComplete="current-password"
               required
             />
+          </label>
+
+          <label className="login-lembrar">
+            <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+            Lembrar meus dados de acesso
           </label>
 
           <button type="submit" disabled={loading}>
