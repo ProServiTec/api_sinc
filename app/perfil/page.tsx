@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import "./perfil.css";
+import ThemeSettings from "../components/ThemeSettings";
 
 interface EmpresaSessao {
   id: string;
@@ -170,6 +171,9 @@ export default function Perfil() {
           </button>
         </form>
       </section>
+
+      {/* ── Aparência ── */}
+      <ThemeSettings />
     </>
   );
 }

@@ -15,6 +15,26 @@
   --amber:           #B45309;   /* pendente */
 }
 
+/* Tema escuro — ativado via atributo data-theme="dark" na <html>,
+   controlado pela tela de Aparência (Vendas → Aparência / Meu Perfil). */
+:root[data-theme="dark"] {
+  --bg:              #0B1320;
+  --surface:         #111C30;
+  --border:          #23324A;
+  --text-primary:    #F1F5F9;
+  --text-secondary:  #94A3B8;
+  --amber:           #F59E0B;   /* o tom claro fica ilegível em fundo escuro */
+}
+
+/* --brand e --brand-hover são a cor escolhida pelo usuário; são aplicadas via
+   style inline no <html> (ver lib/theme.ts) e por isso valem nos dois temas. */
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  transition: background-color 0.15s, color 0.15s;
+}
+
 * {
   font-family: "Inter", sans-serif;
   font-optical-sizing: auto;

@@ -1,0 +1,113 @@
+/* ============================================================
+   ThemeSettings — seleção de tema claro/escuro e cor principal
+   ============================================================ */
+
+.theme-settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
+}
+
+.theme-settings-field label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.theme-mode-group {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.theme-mode-btn {
+  padding: 0.65rem 1.25rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.theme-mode-btn:hover {
+  border-color: var(--brand);
+}
+
+.theme-mode-btn-active {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.theme-settings .perfil-cor-preview {
+  padding: 0;
+  overflow: hidden;
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+}
+
+.theme-settings .perfil-cor-preview::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.theme-settings .perfil-cor-preview::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+
+.theme-color-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: "Consolas", "Courier New", monospace;
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.theme-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.1s, border-color 0.15s;
+}
+
+.theme-swatch:hover {
+  transform: scale(1.1);
+}
+
+.theme-swatch-active {
+  border-color: var(--text-primary);
+}
+
+.theme-reset-btn {
+  padding: 0.55rem 1.1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.theme-reset-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.theme-settings-hint {
+  margin-top: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}

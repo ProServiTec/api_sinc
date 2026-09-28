@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart, DonutChart, LineChart } from "./Charts";
 import "./vendas.css";
+import ThemeSettings from "../components/ThemeSettings";
 
 interface EmpresaSessao {
   id: string;
@@ -114,7 +115,7 @@ const GRAFICOS_DISPONIVEIS = [
 
 type GraficoId = (typeof GRAFICOS_DISPONIVEIS)[number]["id"];
 
-type AbaPrincipal = "dashboard" | "vendas" | "caixa" | "estoque" | "financeiro" | "etiquetas" | "usuarios";
+type AbaPrincipal = "dashboard" | "vendas" | "caixa" | "estoque" | "financeiro" | "etiquetas" | "usuarios" | "aparencia";
 
 const NAV_ITEMS: { label: string; aba: AbaPrincipal | null }[] = [
   { label: "Dashboard", aba: "dashboard" },
@@ -1775,6 +1776,13 @@ export default function Vendas() {
               Usuários
             </span>
           )}
+          <span
+            className={`vendas-nav-item${aba === "aparencia" ? " vendas-nav-item-active" : ""}`}
+            onClick={() => setAba("aparencia")}
+            style={{ cursor: "pointer" }}
+          >
+            Aparência
+          </span>
         </nav>
 
         {empresa && (
@@ -1791,7 +1799,9 @@ export default function Vendas() {
       </header>
 
       <main className="vendas-main">
-        {aba === "usuarios" && empresa ? (
+        {aba === "aparencia" ? (
+          <ThemeSettings />
+        ) : aba === "usuarios" && empresa ? (
           <UsuariosPanel empresaId={empresa.id} />
         ) : !filiaisProntas ? (
           <section className="vendas-filtros">
