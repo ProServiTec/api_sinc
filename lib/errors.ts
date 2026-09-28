@@ -83,6 +83,17 @@ export function classifyError(error: unknown): ClassifiedError {
         };
       }
       if (code === "23505") {
+        // Trigger core.trg_filiais_pdv_source_database_unique: mesmo banco do
+        // PDV+ já vinculado a outra filial/licença — mostra a mensagem real.
+        if (e.constraint === "filiais_pdv_source_database_unique_runtime") {
+          return {
+            status: 409,
+            tipo: "banco_divergente",
+            error: e.message ?? "Este banco de dados do PDV+ já está vinculado a outra licença.",
+            codigo_postgres: code,
+            constraint: e.constraint,
+          };
+        }
         return {
           status: 409,
           tipo: "conflito_banco",

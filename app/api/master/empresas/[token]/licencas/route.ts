@@ -35,7 +35,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const { rows: clienteRows } = await pool.query(
-      `SELECT id, revenda_id FROM core.empresas WHERE cpf_cnpj = $1 AND is_admin = false LIMIT 1`,
+      `SELECT id FROM core.empresas WHERE cpf_cnpj = $1 AND is_admin = false LIMIT 1`,
       [cpfCnpj]
     );
     if (clienteRows.length === 0) {
@@ -57,18 +57,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       });
     }
 
-    // Cliente sem revendedor (cadastrado direto pelo Master): a licença fica
-    // registrada como concedida pelo próprio Master, não por uma revenda.
-    let revendaId = cliente.revenda_id as string | null;
-    if (!revendaId) {
-      const { rows: masterRows } = await pool.query(
-        `SELECT id FROM core.empresas WHERE is_master = true LIMIT 1`
-      );
-      if (masterRows.length === 0) {
-        throw new SyncValidationError("Empresa Master não encontrada");
-      }
-      revendaId = masterRows[0].id;
+    // Licença de cortesia: fica registrada como concedida pelo próprio Master,
+    // mesmo que o cliente tenha revendedor — não foi a revenda que vendeu.
+    const { rows: masterRows } = await pool.query(
+      `SELECT id FROM core.empresas WHERE is_master = true LIMIT 1`
+    );
+    if (masterRows.length === 0) {
+      throw new SyncValidationError("Empresa Master não encontrada");
     }
+    const revendaId = masterRows[0].id as string;
 
     const { rows } = await pool.query(
       `INSERT INTO core.licencas_atribuidas (licenca_id, revenda_id, empresa_id)

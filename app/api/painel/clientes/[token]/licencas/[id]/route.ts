@@ -32,10 +32,10 @@ export async function DELETE(
     }
 
     // Devolve a licença para o estoque da revenda em vez de apagar: a unidade
-    // já foi comprada, só deixa de estar atribuída a este cliente.
+    // já foi comprada, só deixa de estar atribuída a este cliente (e desvincula da filial).
     const { rows } = await pool.query(
       `UPDATE core.licencas_atribuidas
-       SET empresa_id = NULL, updated_at = now()
+       SET empresa_id = NULL, filial_id = NULL, updated_at = now()
        WHERE id = $1 AND empresa_id = $2
        RETURNING id`,
       [id, clienteRows[0].id]

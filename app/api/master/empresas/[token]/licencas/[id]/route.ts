@@ -28,7 +28,7 @@ export async function DELETE(
 
     const { rows } = await pool.query(
       `UPDATE core.licencas_atribuidas
-       SET empresa_id = NULL, updated_at = now()
+       SET empresa_id = NULL, filial_id = NULL, updated_at = now()
        WHERE id = $1 AND empresa_id = $2
        RETURNING id`,
       [id, clienteRows[0].id]
