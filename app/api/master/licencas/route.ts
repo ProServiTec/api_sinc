@@ -2,12 +2,12 @@ import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 
-const PERIODICIDADES = new Set(["mensal", "anual"]);
+const PERIODICIDADES = new Set(["mensal"]);
 
 export async function GET() {
   try {
     const { rows } = await pool.query(
-      `SELECT id, nome, descricao, valor, periodicidade, dia_fechamento, ativo, created_at, updated_at
+      `SELECT id, nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica, ativo, created_at, updated_at
        FROM core.licencas
        ORDER BY created_at DESC`
     );
@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const { nome, descricao, valor, periodicidade, dia_fechamento } = (body ?? {}) as Record<string, unknown>;
+  const { nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
 
   try {
     if (typeof nome !== "string" || nome.trim() === "") {
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
       throw new SyncValidationError("valor é obrigatório e não pode ser negativo (0 = plano gratuito)");
     }
     if (typeof periodicidade !== "string" || !PERIODICIDADES.has(periodicidade)) {
-      throw new SyncValidationError("periodicidade deve ser 'mensal' ou 'anual'");
+      throw new SyncValidationError("periodicidade deve ser 'mensal'");
     }
     if (
       typeof dia_fechamento !== "number" ||
@@ -60,12 +63,22 @@ export async function POST(request: NextRequest) {
     if (descricao !== undefined && descricao !== null && typeof descricao !== "string") {
       throw new SyncValidationError("descricao inválida");
     }
+    if (renovacao_automatica !== undefined && typeof renovacao_automatica !== "boolean") {
+      throw new SyncValidationError("renovacao_automatica inválida");
+    }
 
     const { rows } = await pool.query(
-      `INSERT INTO core.licencas (nome, descricao, valor, periodicidade, dia_fechamento)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, nome, descricao, valor, periodicidade, dia_fechamento, ativo, created_at, updated_at`,
-      [nome.trim(), (descricao as string | undefined)?.trim() || null, valor, periodicidade, dia_fechamento]
+      `INSERT INTO core.licencas (nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica, ativo, created_at, updated_at`,
+      [
+        nome.trim(),
+        (descricao as string | undefined)?.trim() || null,
+        valor,
+        periodicidade,
+        dia_fechamento,
+        renovacao_automatica ?? true,
+      ]
     );
 
     return new Response(JSON.stringify({ licenca: rows[0] }), {

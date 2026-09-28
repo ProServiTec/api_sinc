@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { pool } from "@/lib/db";
 import { classifyError, SyncValidationError } from "@/lib/errors";
 
-const PERIODICIDADES = new Set(["mensal", "anual"]);
+const PERIODICIDADES = new Set(["mensal"]);
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,10 +18,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
   }
 
-  const { nome, descricao, valor, periodicidade, dia_fechamento, ativo } = (body ?? {}) as Record<
-    string,
-    unknown
-  >;
+  const { nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica, ativo } = (body ??
+    {}) as Record<string, unknown>;
 
   try {
     if (typeof nome !== "string" || nome.trim() === "") {
@@ -31,7 +29,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       throw new SyncValidationError("valor é obrigatório e não pode ser negativo (0 = plano gratuito)");
     }
     if (typeof periodicidade !== "string" || !PERIODICIDADES.has(periodicidade)) {
-      throw new SyncValidationError("periodicidade deve ser 'mensal' ou 'anual'");
+      throw new SyncValidationError("periodicidade deve ser 'mensal'");
     }
     if (
       typeof dia_fechamento !== "number" ||
@@ -44,6 +42,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (descricao !== undefined && descricao !== null && typeof descricao !== "string") {
       throw new SyncValidationError("descricao inválida");
     }
+    if (typeof renovacao_automatica !== "boolean") {
+      throw new SyncValidationError("renovacao_automatica é obrigatório");
+    }
     if (typeof ativo !== "boolean") {
       throw new SyncValidationError("ativo é obrigatório");
     }
@@ -51,10 +52,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { rows } = await pool.query(
       `UPDATE core.licencas
        SET nome = $1, descricao = $2, valor = $3, periodicidade = $4, dia_fechamento = $5,
-           ativo = $6, updated_at = now()
-       WHERE id = $7
-       RETURNING id, nome, descricao, valor, periodicidade, dia_fechamento, ativo, created_at, updated_at`,
-      [nome.trim(), (descricao as string | undefined)?.trim() || null, valor, periodicidade, dia_fechamento, ativo, id]
+           renovacao_automatica = $6, ativo = $7, updated_at = now()
+       WHERE id = $8
+       RETURNING id, nome, descricao, valor, periodicidade, dia_fechamento, renovacao_automatica, ativo, created_at, updated_at`,
+      [
+        nome.trim(),
+        (descricao as string | undefined)?.trim() || null,
+        valor,
+        periodicidade,
+        dia_fechamento,
+        renovacao_automatica,
+        ativo,
+        id,
+      ]
     );
 
     if (rows.length === 0) {

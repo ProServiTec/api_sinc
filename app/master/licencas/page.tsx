@@ -11,6 +11,7 @@ interface Licenca {
   valor: string;
   periodicidade: "mensal" | "anual";
   dia_fechamento: number;
+  renovacao_automatica: boolean;
   ativo: boolean;
   created_at: string;
 }
@@ -94,6 +95,7 @@ export default function MasterLicencas() {
                 <th>Valor</th>
                 <th>Periodicidade</th>
                 <th>Dia de fechamento</th>
+                <th>Renovação automática</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -108,6 +110,11 @@ export default function MasterLicencas() {
                   <td>{formatarMoeda(l.valor)}</td>
                   <td>{l.periodicidade === "mensal" ? "Mensal" : "Anual"}</td>
                   <td>Dia {l.dia_fechamento}</td>
+                  <td>
+                    <span className={l.renovacao_automatica ? "painel-badge-ativo" : "painel-badge-inativo"}>
+                      {l.renovacao_automatica ? "Sim" : "Não"}
+                    </span>
+                  </td>
                   <td>
                     <span className={l.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
                       {l.ativo ? "Ativa" : "Inativa"}
@@ -160,8 +167,9 @@ function LicencaModal({
   const [nome, setNome] = useState(licenca?.nome ?? "");
   const [descricao, setDescricao] = useState(licenca?.descricao ?? "");
   const [valor, setValor] = useState(licenca?.valor ?? "");
-  const [periodicidade, setPeriodicidade] = useState<"mensal" | "anual">(licenca?.periodicidade ?? "mensal");
+  const [periodicidade] = useState<"mensal">("mensal");
   const [diaFechamento, setDiaFechamento] = useState(String(licenca?.dia_fechamento ?? 1));
+  const [renovacaoAutomatica, setRenovacaoAutomatica] = useState(licenca?.renovacao_automatica ?? true);
   const [ativo, setAtivo] = useState(licenca?.ativo ?? true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +191,7 @@ function LicencaModal({
           valor: Number(valor),
           periodicidade,
           dia_fechamento: Number(diaFechamento),
+          renovacao_automatica: renovacaoAutomatica,
           ...(editando ? { ativo } : {}),
         }),
       });
@@ -235,14 +244,6 @@ function LicencaModal({
         </label>
 
         <label className="clients-field">
-          Periodicidade
-          <select value={periodicidade} onChange={(e) => setPeriodicidade(e.target.value as "mensal" | "anual")}>
-            <option value="mensal">Mensal</option>
-            <option value="anual">Anual</option>
-          </select>
-        </label>
-
-        <label className="clients-field">
           Dia de fechamento (renovação)
           <input
             type="number"
@@ -252,6 +253,15 @@ function LicencaModal({
             onChange={(e) => setDiaFechamento(e.target.value)}
             required
           />
+        </label>
+
+        <label className="clients-field licencas-campo-ativo">
+          <input
+            type="checkbox"
+            checked={renovacaoAutomatica}
+            onChange={(e) => setRenovacaoAutomatica(e.target.checked)}
+          />
+          Renovação automática
         </label>
 
         {editando && (
