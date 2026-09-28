@@ -22,6 +22,13 @@ export async function GET(request: NextRequest) {
        FROM core.filiais f
        LEFT JOIN core.sync_status ss ON ss.empresa_id = f.empresa_id AND ss.filial_id = f.id
        WHERE f.empresa_id = $1
+         AND f.ativo = true
+         AND EXISTS (
+           SELECT 1 FROM core.licencas_atribuidas la
+           WHERE la.filial_id = f.id
+             AND la.ativo = true
+             AND la.empresa_id = f.empresa_id
+         )
        ORDER BY f.nome`,
       [empresaId]
     );

@@ -25,7 +25,11 @@ export async function GET(request: NextRequest) {
     const [licencasResumo, titulosResumo, licencas, planosResult] = await Promise.all([
       // "Licenças" = filiais de todas as empresas-cliente (não-admin)
       pool.query(
-        `SELECT count(*)::int AS total, count(*) FILTER (WHERE f.ativo)::int AS ativas
+        `SELECT count(*)::int AS total,
+                count(*) FILTER (WHERE f.ativo AND EXISTS (
+                  SELECT 1 FROM core.licencas_atribuidas la
+                  WHERE la.filial_id = f.id AND la.ativo = true AND la.empresa_id = f.empresa_id
+                ))::int AS ativas
          FROM core.filiais f
          JOIN core.empresas e ON e.id = f.empresa_id
          WHERE e.is_admin = false`
@@ -42,11 +46,16 @@ export async function GET(request: NextRequest) {
         [empresaId]
       ),
       pool.query(
-        `SELECT f.id, f.nome, f.ativo, f.created_at, e.nome AS cliente_nome,
-           COALESCE(
-             (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.filial_id = f.id ORDER BY la.created_at DESC LIMIT 1),
-             (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.empresa_id = f.empresa_id ORDER BY la.created_at DESC LIMIT 1)
-           ) as plano_nome
+        `SELECT f.id, f.nome,
+                (f.ativo AND EXISTS (
+                  SELECT 1 FROM core.licencas_atribuidas la
+                  WHERE la.filial_id = f.id AND la.ativo = true AND la.empresa_id = f.empresa_id
+                )) AS ativo,
+                f.created_at, e.nome AS cliente_nome,
+                COALESCE(
+                  (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.filial_id = f.id AND la.ativo = true ORDER BY la.created_at DESC LIMIT 1),
+                  (SELECT l.nome FROM core.licencas_atribuidas la JOIN core.licencas l ON l.id = la.licenca_id WHERE la.empresa_id = f.empresa_id AND la.ativo = true ORDER BY la.created_at DESC LIMIT 1)
+                ) as plano_nome
          FROM core.filiais f
          JOIN core.empresas e ON e.id = f.empresa_id
          WHERE e.is_admin = false

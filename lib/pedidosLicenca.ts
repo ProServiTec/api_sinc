@@ -65,6 +65,11 @@ export async function confirmarPedidoPago(
       [pedidoId, opts.transactionNsu ?? null, licencaRows[0].id, opts.confirmadoPor]
     );
 
+    if (pedido.filial_id) {
+      await client.query(`UPDATE core.filiais SET ativo = true, updated_at = now() WHERE id = $1`, [pedido.filial_id]);
+      await client.query(`UPDATE core.api_clients SET ativo = true WHERE filial_id = $1`, [pedido.filial_id]);
+    }
+
     await client.query("COMMIT");
     return { ok: true, jaConfirmado: false, licencaAtribuidaId: licencaRows[0].id };
   } catch (error) {

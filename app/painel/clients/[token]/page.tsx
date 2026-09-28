@@ -574,7 +574,7 @@ export default function DetalheCliente() {
                     <div className="clients-licenca-topo">
                       <strong>{l.nome}</strong>
                       <span className={l.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
-                        {l.ativo ? "Ativa" : "Inativa"}
+                        {l.ativo ? "Ativa" : "Bloqueada"}
                       </span>
                     </div>
                     {l.identificacao && (

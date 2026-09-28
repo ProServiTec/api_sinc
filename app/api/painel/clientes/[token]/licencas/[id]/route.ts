@@ -31,6 +31,12 @@ export async function DELETE(
       });
     }
 
+    const { rows: licencaAnterior } = await pool.query(
+      `SELECT filial_id FROM core.licencas_atribuidas WHERE id = $1 AND empresa_id = $2`,
+      [id, clienteRows[0].id]
+    );
+    const filialId = licencaAnterior[0]?.filial_id as string | undefined;
+
     // Devolve a licença para o estoque da revenda em vez de apagar: a unidade
     // já foi comprada, só deixa de estar atribuída a este cliente (e desvincula da filial).
     const { rows } = await pool.query(
@@ -46,6 +52,17 @@ export async function DELETE(
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    if (filialId) {
+      await pool.query(
+        `UPDATE core.filiais SET ativo = false, updated_at = now() WHERE id = $1`,
+        [filialId]
+      );
+      await pool.query(
+        `UPDATE core.api_clients SET ativo = false WHERE filial_id = $1`,
+        [filialId]
+      );
     }
 
     return new Response(null, { status: 204 });

@@ -26,6 +26,12 @@ export async function DELETE(
       });
     }
 
+    const { rows: licencaAnterior } = await pool.query(
+      `SELECT filial_id FROM core.licencas_atribuidas WHERE id = $1 AND empresa_id = $2`,
+      [id, clienteRows[0].id]
+    );
+    const filialId = licencaAnterior[0]?.filial_id as string | undefined;
+
     const { rows } = await pool.query(
       `UPDATE core.licencas_atribuidas
        SET empresa_id = NULL, filial_id = NULL, updated_at = now()
@@ -39,6 +45,17 @@ export async function DELETE(
         status: 404,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    if (filialId) {
+      await pool.query(
+        `UPDATE core.filiais SET ativo = false, updated_at = now() WHERE id = $1`,
+        [filialId]
+      );
+      await pool.query(
+        `UPDATE core.api_clients SET ativo = false WHERE filial_id = $1`,
+        [filialId]
+      );
     }
 
     return new Response(null, { status: 204 });

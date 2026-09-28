@@ -46,7 +46,7 @@ function formatarMoeda(valor: number) {
 function StatusBadge({ ativo }: { ativo: boolean }) {
   return (
     <span className={`faturas-status-badge ${ativo ? "faturas-status-ativa" : "faturas-status-inativa"}`}>
-      {ativo ? "Ativa" : "Revogada"}
+      {ativo ? "Ativa" : "Bloqueada"}
     </span>
   );
 }

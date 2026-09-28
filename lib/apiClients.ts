@@ -34,10 +34,20 @@ export async function autenticarApiClient(request: NextRequest): Promise<ApiClie
   const tokenHash = hashTokenApiClient(token);
 
   const { rows } = await pool.query(
-    `UPDATE core.api_clients
+    `UPDATE core.api_clients ac
      SET ultimo_uso_at = now()
-     WHERE token_hash = $1 AND ativo = true
-     RETURNING id, empresa_id, filial_id`,
+     WHERE ac.token_hash = $1
+       AND ac.ativo = true
+       AND (
+         ac.filial_id IS NULL
+         OR EXISTS (
+           SELECT 1
+           FROM core.filiais f
+           JOIN core.licencas_atribuidas la ON la.filial_id = f.id AND la.ativo = true AND la.empresa_id = ac.empresa_id
+           WHERE f.id = ac.filial_id AND f.ativo = true
+         )
+       )
+     RETURNING ac.id, ac.empresa_id, ac.filial_id`,
     [tokenHash]
   );
 

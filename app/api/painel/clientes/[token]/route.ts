@@ -38,10 +38,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
     const [filiaisResult, dispositivosResult, licencasPlanoResult, syncStatusResult, titulosResult] = await Promise.all([
       pool.query(
-        `SELECT id, nome, cpf_cnpj, cidade, uf, ativo, created_at
-         FROM core.filiais
-         WHERE empresa_id = $1
-         ORDER BY created_at DESC`,
+        `SELECT f.id, f.nome, f.cpf_cnpj, f.cidade, f.uf, f.created_at,
+                (f.ativo AND EXISTS (
+                  SELECT 1 FROM core.licencas_atribuidas la
+                  WHERE la.filial_id = f.id
+                    AND la.ativo = true
+                    AND la.empresa_id = f.empresa_id
+                )) AS ativo
+         FROM core.filiais f
+         WHERE f.empresa_id = $1
+         ORDER BY f.created_at DESC`,
         [cliente.id]
       ),
       pool.query(
