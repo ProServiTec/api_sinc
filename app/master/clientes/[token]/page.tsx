@@ -34,6 +34,26 @@ interface Titulo {
   status: string;
 }
 
+interface LicencaPlano {
+  id: string;
+  codigo: string;
+  licenca_id: string;
+  licenca_nome: string;
+  valor: string;
+  periodicidade: "mensal" | "anual";
+  dia_fechamento: number;
+  ativo: boolean;
+  created_at: string;
+}
+
+interface LicencaCatalogo {
+  id: string;
+  nome: string;
+  valor: string;
+  periodicidade: "mensal" | "anual";
+  ativo: boolean;
+}
+
 interface Detalhe {
   cliente: {
     id: string;
@@ -47,6 +67,7 @@ interface Detalhe {
   maquinas: number;
   ultima_sincronizacao: string | null;
   licencas: Licenca[];
+  licencas_plano: LicencaPlano[];
   titulos: Titulo[];
 }
 
@@ -58,7 +79,7 @@ function formatarDataHora(iso: string) {
   return new Date(iso).toLocaleString("pt-BR");
 }
 
-function formatarMoeda(valor: number) {
+function formatarMoeda(valor: string | number) {
   return Number(valor).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
@@ -76,8 +97,13 @@ export default function DetalheEmpresaMaster() {
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/master/empresas/${encodeURIComponent(params.token)}`)
+  const [catalogo, setCatalogo] = useState<LicencaCatalogo[]>([]);
+  const [licencaSelecionada, setLicencaSelecionada] = useState("");
+  const [atribuindo, setAtribuindo] = useState(false);
+  const [atribuirError, setAtribuirError] = useState<string | null>(null);
+
+  function carregarDetalhe() {
+    return fetch(`/api/master/empresas/${encodeURIComponent(params.token)}`)
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) {
@@ -87,7 +113,63 @@ export default function DetalheEmpresaMaster() {
       })
       .catch((err) => setError(err.message ?? "Não foi possível carregar a empresa"))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    carregarDetalhe();
+    fetch(`/api/master/licencas`)
+      .then(async (response) => {
+        const data = await response.json();
+        if (response.ok) setCatalogo((data.licencas as LicencaCatalogo[]).filter((l) => l.ativo));
+      })
+      .catch(() => {
+        // Catálogo é um complemento da tela; falha aqui não deve bloquear os dados do cliente.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.token]);
+
+  async function handleAtribuirLicenca() {
+    if (!licencaSelecionada) return;
+    setAtribuindo(true);
+    setAtribuirError(null);
+
+    try {
+      const response = await fetch(`/api/master/empresas/${encodeURIComponent(params.token)}/licencas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ licenca_id: licencaSelecionada }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setAtribuirError(data.error ?? "Não foi possível atribuir a licença");
+        return;
+      }
+      setLicencaSelecionada("");
+      await carregarDetalhe();
+    } catch {
+      setAtribuirError("Não foi possível conectar ao servidor");
+    } finally {
+      setAtribuindo(false);
+    }
+  }
+
+  async function handleRemoverLicenca(licencaPlanoId: string) {
+    if (!confirm("Remover esta licença do cliente?")) return;
+
+    try {
+      const response = await fetch(
+        `/api/master/empresas/${encodeURIComponent(params.token)}/licencas/${licencaPlanoId}`,
+        { method: "DELETE" }
+      );
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error ?? "Não foi possível remover a licença");
+      }
+      await carregarDetalhe();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Não foi possível remover a licença");
+    }
+  }
 
   function iniciarEdicao() {
     if (!detalhe) return;
@@ -229,10 +311,66 @@ export default function DetalheEmpresaMaster() {
 
           <section className="clients-detalhe-card">
             <div className="clients-licencas-header">
+              <h2>Licenças do Plano ({detalhe.licencas_plano.length})</h2>
+              <div className="clients-licencas-plano-selecao">
+                <select
+                  className="clients-licencas-plano-select"
+                  value={licencaSelecionada}
+                  onChange={(e) => setLicencaSelecionada(e.target.value)}
+                >
+                  <option value="">Selecione um plano</option>
+                  {catalogo.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.nome} — {formatarMoeda(c.valor)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="clients-add-licenca-btn"
+                  onClick={handleAtribuirLicenca}
+                  disabled={!licencaSelecionada || atribuindo}
+                  title="O Master concede a licença sem cobrar — não passa pelo pagamento do revendedor"
+                >
+                  {atribuindo ? "Atribuindo..." : "+ Atribuir licença grátis"}
+                </button>
+              </div>
+            </div>
+
+            {atribuirError && <p className="clients-error">{atribuirError}</p>}
+            {catalogo.length === 0 && (
+              <p className="painel-vazio">Nenhum plano de licença disponível no momento.</p>
+            )}
+
+            {detalhe.licencas_plano.length === 0 ? (
+              <p className="painel-vazio">Nenhuma licença de plano atribuída a este cliente ainda.</p>
+            ) : (
+              <ul className="clients-licencas-lista">
+                {detalhe.licencas_plano.map((l) => (
+                  <li key={l.id} className="clients-licenca-item">
+                    <div className="clients-licenca-topo">
+                      <strong>{l.licenca_nome}</strong>
+                      <span className={l.ativo ? "painel-badge-ativo" : "painel-badge-inativo"}>
+                        {l.ativo ? "Ativa" : "Inativa"}
+                      </span>
+                    </div>
+                    <div className="clients-licenca-meta">
+                      <code className="licencas-codigo">{l.codigo}</code>
+                      <span>{formatarMoeda(l.valor)}</span>
+                      <span>{l.periodicidade === "mensal" ? "Mensal" : "Anual"}</span>
+                      <span>Atribuída em {formatarData(l.created_at)}</span>
+                    </div>
+                    <button className="clients-licenca-remover-btn" onClick={() => handleRemoverLicenca(l.id)}>
+                      Remover
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="clients-detalhe-card">
+            <div className="clients-licencas-header">
               <h2>Licenças ({detalhe.licencas.length})</h2>
-              <button className="clients-add-licenca-btn" title="Em breve">
-                + Adicionar Licença <span className="clients-add-licenca-valor">R$ 11,99/mês</span>
-              </button>
             </div>
 
             {detalhe.licencas.length === 0 ? (
