@@ -1734,10 +1734,8 @@ export default function Vendas() {
         {/* Logo Zaya compacto */}
         <div className="vendas-topbar-logo">
           <div className="vendas-topbar-logo-icon">
-            <svg width="18" height="18" viewBox="0 0 22 22" fill="none">
-              <text x="1" y="17" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="16" fill="white">Z</text>
-              <text x="14" y="10" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="10" fill="#2196F3">+</text>
-            </svg>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-zaya.png" alt="Zaya Sistemas" className="vendas-topbar-logo-img" />
           </div>
           <span className="vendas-topbar-logo-name">Zaya Vendas</span>
         </div>

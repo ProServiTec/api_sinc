@@ -85,10 +85,8 @@ export default function PerfilLayout({ children }: { children: React.ReactNode }
         <div>
           <div className="painel-logo">
             <div className="painel-logo-icon">
-              <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <text x="1" y="17" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="16" fill="white">Z</text>
-                <text x="14" y="10" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="10" fill="#2196F3">+</text>
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-zaya.png" alt="Zaya Sistemas" className="painel-logo-img" />
             </div>
             <div className="painel-logo-text">
               <strong>Zaya Sistemas</strong>

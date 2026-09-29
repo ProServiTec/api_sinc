@@ -275,7 +275,7 @@ export default function Faturas() {
                             </span>
                           );
                         })() : (
-                          <span style={{ fontWeight: 600, color: 'var(--brand-text, var(--brand))' }}>{l.plano_nome ?? "Sem plano"}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--brand)' }}>{l.plano_nome ?? "Sem plano"}</span>
                         )}
                       </div>
                     </div>
@@ -292,15 +292,15 @@ export default function Faturas() {
 
             {selecionadas.size > 0 && (
               <div style={{
-                marginTop: 24, padding: '20px 24px', background: 'var(--surface)',
-                borderRadius: 12, border: '1px solid var(--border)',
+                marginTop: 24, padding: '20px 24px', background: '#f8fafc',
+                borderRadius: 12, border: '1px solid #e2e8f0',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <div>
-                  <span style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <span style={{ display: 'block', fontSize: '0.9rem', color: '#64748b' }}>
                     {selecionadas.size} licença(s) selecionada(s)
                   </span>
-                  <strong style={{ fontSize: '1.4rem', color: 'var(--text-primary)' }}>
+                  <strong style={{ fontSize: '1.4rem', color: '#0f172a' }}>
                     Total: {formatarMoeda(selecionadas.size * precoPlano)}
                   </strong>
                 </div>
@@ -310,8 +310,8 @@ export default function Faturas() {
                   disabled={processandoPagamento}
                   style={{
                     padding: '12px 28px', fontSize: '1rem',
-                    background: 'var(--brand)', color: 'var(--brand-contrast, #fff)',
-                    border: '1.5px solid var(--brand-border, var(--brand))', borderRadius: 8,
+                    background: 'var(--brand)', color: '#fff',
+                    border: 'none', borderRadius: 8,
                     cursor: 'pointer', fontWeight: 700,
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}

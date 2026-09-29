@@ -5,7 +5,6 @@
   --brand:           #2196F3;   /* azul elétrico (sinal de +) */
   --brand-contrast:  #FFFFFF;   /* texto sobre a cor da marca (branco ou escuro para alto contraste) */
   --brand-border:    #2196F3;   /* borda para evitar botão invisível se a marca for branca */
-  --brand-text:      #2196F3;   /* cor da marca para textos, ajustada para contraste quando a marca for muito clara */
   --brand-dark:      #0D1B2A;   /* azul marinho profundo (corpo do Z) */
   --brand-hover:     #1976D2;   /* hover de botões / links */
   --bg:              #F8FAFC;   /* fundo claro suave */

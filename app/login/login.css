@@ -46,15 +46,24 @@
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background: var(--brand-dark);
+  background: #ffffff;
+  border: 1.5px solid rgba(33, 150, 243, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 .login-logo-icon svg {
   display: block;
+}
+
+.login-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
 }
 
 .login-logo-text {
@@ -172,12 +181,11 @@
   padding: 0.8rem;
   border-radius: 8px;
   background: var(--brand);
-  color: var(--brand-contrast, #fff);
-  border: 1.5px solid var(--brand-border, var(--brand));
+  color: #fff;
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.15s ease;
   letter-spacing: 0.01em;
 }
 

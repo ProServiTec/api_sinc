@@ -37,9 +37,9 @@
 }
 
 .theme-mode-btn-active {
-  border-color: var(--brand-border, var(--brand));
+  border-color: var(--brand);
   background: var(--brand);
-  color: var(--brand-contrast, #fff);
+  color: #fff;
 }
 
 .theme-settings .perfil-cor-preview {

@@ -209,10 +209,8 @@ export default function Login() {
           {/* Logo Zaya Sistemas */}
           <div className="login-logo">
             <div className="login-logo-icon">
-              <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <text x="2" y="20" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="18" fill="white">Z</text>
-                <text x="17" y="12" fontFamily="Inter, sans-serif" fontWeight="900" fontSize="11" fill="#2196F3">+</text>
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-zaya.png" alt="Zaya Sistemas" className="login-logo-img" />
             </div>
             <div className="login-logo-text">
               <strong>Zaya Sistemas</strong>

@@ -85,15 +85,11 @@ export function applyThemePrefs(prefs: ThemePrefs) {
     const lum = getLuminance(prefs.accent);
     const isLight = lum > 0.55;
     const isVeryLight = lum > 0.85;
-    const brandText = prefs.mode === "light"
-      ? (lum > 0.45 ? "#0D1B2A" : prefs.accent)
-      : (lum < 0.25 ? "#FFFFFF" : prefs.accent);
 
     root.style.setProperty("--brand", prefs.accent);
     root.style.setProperty("--brand-hover", isVeryLight ? "#E2E8F0" : shadeHex(prefs.accent, -15));
     root.style.setProperty("--brand-contrast", isLight ? "#0D1B2A" : "#FFFFFF");
     root.style.setProperty("--brand-border", isVeryLight ? "#CBD5E1" : prefs.accent);
-    root.style.setProperty("--brand-text", brandText);
   }
 }
 
@@ -111,4 +107,4 @@ export function saveThemePrefs(area: ThemeArea, prefs: ThemePrefs) {
 // Script inline executado antes da hidratação, pra pintar a tela já no tema
 // certo (da área certa, decidida pelo caminho da própria URL) e evitar o
 // "flash" de tema claro seguido de troca pro escuro.
-export const THEME_INIT_SCRIPT = `(function(){try{var path=location.pathname;var area=path.indexOf('/vendas')===0?'vendas':(path.indexOf('/master')===0?'master':((path.indexOf('/painel')===0||path.indexOf('/perfil')===0)?'painel':null));if(!area)return;var r=localStorage.getItem('zaya:theme:'+area);var p=r?JSON.parse(r):null;var mode=p&&p.mode==='dark'?'dark':'light';var accent=p&&typeof p.accent==='string'&&/^#[0-9a-fA-F]{6}$/.test(p.accent)?p.accent:'${DEFAULT_THEME.accent}';var root=document.documentElement;root.setAttribute('data-theme',mode);root.style.setProperty('--brand',accent);var n=parseInt(accent.slice(1),16);var lum=(0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255;root.style.setProperty('--brand-contrast',lum>0.55?'#0D1B2A':'#FFFFFF');root.style.setProperty('--brand-border',lum>0.85?'#CBD5E1':accent);var brandText=mode==='light'?(lum>0.45?'#0D1B2A':accent):(lum<0.25?'#FFFFFF':accent);root.style.setProperty('--brand-text',brandText);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var path=location.pathname;var area=path.indexOf('/vendas')===0?'vendas':(path.indexOf('/master')===0?'master':((path.indexOf('/painel')===0||path.indexOf('/perfil')===0)?'painel':null));if(!area)return;var r=localStorage.getItem('zaya:theme:'+area);var p=r?JSON.parse(r):null;var mode=p&&p.mode==='dark'?'dark':'light';var accent=p&&typeof p.accent==='string'&&/^#[0-9a-fA-F]{6}$/.test(p.accent)?p.accent:'${DEFAULT_THEME.accent}';var root=document.documentElement;root.setAttribute('data-theme',mode);root.style.setProperty('--brand',accent);var n=parseInt(accent.slice(1),16);var lum=(0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255;root.style.setProperty('--brand-contrast',lum>0.55?'#0D1B2A':'#FFFFFF');root.style.setProperty('--brand-border',lum>0.85?'#CBD5E1':accent);}catch(e){}})();`;

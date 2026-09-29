@@ -22,8 +22,7 @@
   padding: 0.65rem 1.1rem;
   border-radius: 8px;
   background: var(--brand);
-  color: var(--brand-contrast, #fff);
-  border: 1.5px solid var(--brand-border, var(--brand));
+  color: #fff;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
@@ -245,7 +244,13 @@
   font-size: 0.95rem;
   font-weight: 400;
   color: var(--text-primary);
+  background: var(--bg);
   transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.clients-field input::placeholder {
+  color: var(--text-secondary, #64748B);
+  opacity: 1;
 }
 
 .clients-field input:focus {
@@ -264,8 +269,7 @@
   padding: 0.7rem;
   border-radius: 8px;
   background: var(--brand);
-  color: var(--brand-contrast, #fff);
-  border: 1.5px solid var(--brand-border, var(--brand));
+  color: #fff;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
@@ -442,8 +446,7 @@
   padding: 0.55rem 0.5rem 0.55rem 0.9rem;
   border-radius: 8px;
   background: var(--brand);
-  color: var(--brand-contrast, #fff);
-  border: 1.5px solid var(--brand-border, var(--brand));
+  color: #fff;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
