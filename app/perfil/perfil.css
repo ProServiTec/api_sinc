@@ -121,7 +121,8 @@
   padding: 0.65rem 1.75rem;
   border-radius: 8px;
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-contrast, #fff);
+  border: 1.5px solid var(--brand-border, var(--brand));
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;

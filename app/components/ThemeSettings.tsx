@@ -46,34 +46,39 @@ export default function ThemeSettings({ area }: ThemeSettingsProps) {
       <h2>Aparência</h2>
 
       <div className="theme-settings-field">
-        <label>Tema</label>
+        <label>Modo de tema (fundo e menus)</label>
         <div className="theme-mode-group">
           <button
             type="button"
             className={`theme-mode-btn${prefs.mode === "light" ? " theme-mode-btn-active" : ""}`}
             onClick={() => atualizar({ mode: "light" })}
           >
-            ☀️ Claro
+            ☀️ Fundo Claro
           </button>
           <button
             type="button"
             className={`theme-mode-btn${prefs.mode === "dark" ? " theme-mode-btn-active" : ""}`}
             onClick={() => atualizar({ mode: "dark" })}
           >
-            🌙 Escuro
+            🌙 Fundo Escuro
           </button>
         </div>
+        <p className="theme-settings-hint" style={{ marginTop: "0.35rem" }}>
+          {prefs.mode === "light"
+            ? "Modo Claro: fundo branco, menu lateral branco e texto escuro de alta legibilidade."
+            : "Modo Escuro: fundo preto/marinho e menus escuros para menor cansaço visual."}
+        </p>
       </div>
 
       <div className="theme-settings-field">
-        <label>Cor principal</label>
+        <label>Cor de destaque (botões e detalhes)</label>
         <div className="perfil-cor-wrap">
           <input
             type="color"
             className="perfil-cor-preview"
             value={prefs.accent}
             onChange={(e) => atualizar({ accent: e.target.value })}
-            aria-label="Escolher cor principal"
+            aria-label="Escolher cor de destaque"
           />
           <span className="theme-color-value">{prefs.accent.toUpperCase()}</span>
         </div>
@@ -91,6 +96,9 @@ export default function ThemeSettings({ area }: ThemeSettingsProps) {
             />
           ))}
         </div>
+        <p className="theme-settings-hint" style={{ marginTop: "0.35rem" }}>
+          O contraste das fontes e botões é calculado de forma inteligente para que o texto nunca fique apagado ou ilegível.
+        </p>
       </div>
 
       <button type="button" className="theme-reset-btn" onClick={() => atualizar(DEFAULT_THEME)}>

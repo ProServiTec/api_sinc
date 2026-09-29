@@ -3,9 +3,6 @@
    ============================================================ */
 
 .vendas-container {
-  --brand: #2196F3; /* Azul elétrico da Zaya */
-  --bg: #F9FAFB;    /* Fundo quase branco do Bambu */
-
   min-height: 100vh;
   background: var(--bg);
 }
@@ -99,9 +96,9 @@
 }
 
 .vendas-nav-item-active {
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
   font-weight: 600;
-  border-bottom-color: var(--brand);
+  border-bottom-color: var(--brand-text, var(--brand));
   cursor: default;
 }
 
@@ -111,7 +108,7 @@
 }
 
 .vendas-nav-item[style*="pointer"]:hover {
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
 }
 
 /* ── User / Avatar / Sair ─────────────────────────────────── */
@@ -133,7 +130,8 @@
   align-items: center;
   justify-content: center;
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-contrast, #fff);
+  border: 1.5px solid var(--brand-border, var(--brand));
   font-weight: 700;
   font-size: 0.85rem;
 }
@@ -652,8 +650,8 @@
 
 .vendas-filial-tab-ativa {
   background: rgba(33, 150, 243, 0.1);
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: var(--brand-border, var(--brand));
+  color: var(--brand-text, var(--brand));
   font-weight: 600;
 }
 
@@ -787,19 +785,20 @@
 
 .vendas-fin-exportar {
   padding: 0.45rem 1rem;
-  border: 1.5px solid var(--brand);
+  border: 1.5px solid var(--brand-border, var(--brand));
   border-radius: 8px;
   background: transparent;
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .vendas-fin-exportar:hover:not(:disabled) {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-contrast, #fff);
+  border-color: var(--brand-border, var(--brand));
 }
 
 .vendas-fin-exportar:disabled {
@@ -851,7 +850,7 @@
   border-color: rgba(33, 150, 243, 0.2);
 }
 .vendas-fin-card-blue span,
-.vendas-fin-card-blue strong { color: var(--brand); }
+.vendas-fin-card-blue strong { color: var(--brand-text, var(--brand)); }
 
 /* red — Vencidos / Pendentes */
 .vendas-fin-card-red {
@@ -1268,14 +1267,14 @@
 
 .vendas-btn-brand {
   background: var(--brand);
-  color: #fff;
-  border: none;
+  color: var(--brand-contrast, #fff);
+  border: 1.5px solid var(--brand-border, var(--brand));
   border-radius: 6px;
   padding: 0.65rem;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, background 0.15s, border-color 0.15s;
 }
 
 .vendas-btn-brand:hover {
@@ -1284,8 +1283,8 @@
 
 .vendas-btn-outline-brand {
   background: transparent;
-  color: var(--brand);
-  border: 1px solid var(--border);
+  color: var(--brand-text, var(--brand));
+  border: 1.5px solid var(--brand-border, var(--border));
   border-radius: 6px;
   cursor: pointer;
   display: flex;
@@ -1299,12 +1298,14 @@
 
 .vendas-fin-nova-conta {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-contrast, #fff);
+  border: 1.5px solid var(--brand-border, var(--brand));
   border-radius: 6px;
   padding: 0.5rem 1rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
 }
 
 .vendas-fin-nova-conta:hover {

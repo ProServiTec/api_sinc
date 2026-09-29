@@ -21,8 +21,10 @@
   width: 240px;
   height: 100vh;
   flex-shrink: 0;
-  background: var(--brand-dark);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   overflow-y: auto;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
 /* ── Logo ──────────────────────────────────────────────── */
@@ -32,7 +34,7 @@
   align-items: center;
   gap: 0.7rem;
   padding: 1.5rem 1.25rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--sidebar-logo-border);
   margin-bottom: 0.5rem;
 }
 
@@ -57,13 +59,13 @@
 .painel-logo-text strong {
   font-size: 0.9rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--sidebar-text-strong);
 }
 
 .painel-logo-text span {
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.45);
-  font-weight: 400;
+  color: var(--sidebar-text-muted);
+  font-weight: 500;
   letter-spacing: 0.02em;
 }
 
@@ -84,38 +86,38 @@
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--sidebar-text);
   text-decoration: none;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
 }
 
 .painel-nav-item:hover {
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-text-strong);
 }
 
 .painel-nav-item-disabled {
-  color: rgba(255, 255, 255, 0.28);
+  color: var(--sidebar-text-muted);
   cursor: not-allowed;
 }
 
 .painel-nav-item-disabled:hover {
   background: none;
-  color: rgba(255, 255, 255, 0.28);
+  color: var(--sidebar-text-muted);
 }
 
 .painel-nav-item-active {
-  background: rgba(33, 150, 243, 0.18);
-  color: var(--brand);
+  background: var(--sidebar-active-bg);
+  color: var(--brand-text, var(--brand));
   font-weight: 600;
-  border-left: 3px solid var(--brand);
+  border-left: 3px solid var(--brand-text, var(--brand));
   padding-left: calc(0.85rem - 3px);
 }
 
 .painel-nav-item-active:hover {
-  background: rgba(33, 150, 243, 0.22);
-  color: var(--brand);
+  background: var(--sidebar-active-bg);
+  color: var(--brand-text, var(--brand));
 }
 
 .painel-nav-icon {
@@ -133,7 +135,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 1rem 1.25rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--sidebar-logo-border);
   text-align: center;
 }
 
@@ -146,20 +148,20 @@
   justify-content: center;
   background: rgba(33, 150, 243, 0.2);
   border: 1.5px solid rgba(33, 150, 243, 0.4);
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
   font-weight: 700;
   font-size: 1rem;
 }
 
 .painel-sidebar-empresa {
   font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--sidebar-text);
   font-weight: 500;
 }
 
 .painel-sidebar-empresa strong {
   display: block;
-  color: #fff;
+  color: var(--sidebar-text-strong);
   font-weight: 600;
 }
 
@@ -274,7 +276,7 @@
 }
 
 .painel-card-value-blue {
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
 }
 
 .painel-card-value-muted {
@@ -347,7 +349,7 @@
 .painel-clientes-ver-todos {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
   text-decoration: none;
   white-space: nowrap;
 }
@@ -467,7 +469,7 @@
 .licencas-catalogo-valor {
   font-size: 1.3rem;
   font-weight: 700;
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
 }
 
 .licencas-catalogo-meta {
@@ -480,11 +482,12 @@
   padding: 0.6rem;
   border-radius: 8px;
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-contrast, #fff);
+  border: 1.5px solid var(--brand-border, var(--brand));
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .licencas-comprar-btn:hover {
@@ -497,7 +500,7 @@
 }
 
 .painel-status-atribuida {
-  color: var(--brand);
+  color: var(--brand-text, var(--brand));
   font-weight: 600;
 }
 

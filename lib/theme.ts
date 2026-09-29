@@ -58,6 +58,23 @@ export function shadeHex(hex: string, percent: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
+// Calcula a luminância percebida (ITU-R BT.709) de 0 (preto) a 1 (branco).
+export function getLuminance(hex: string): number {
+  if (!HEX_RE.test(hex)) return 0;
+  const num = parseInt(hex.slice(1), 16);
+  const r = (num >> 16) & 0xff;
+  const g = (num >> 8) & 0xff;
+  const b = num & 0xff;
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+}
+
+// Cor ideal do texto para contraste garantido sobre a cor principal:
+// se a cor for clara (ex: amarelo, ciano ou branco), texto fica escuro (#0D1B2A);
+// se a cor for escura/média (ex: azul, roxo, vermelho), texto fica branco (#FFFFFF).
+export function getContrastColor(hex: string): string {
+  return getLuminance(hex) > 0.55 ? "#0D1B2A" : "#FFFFFF";
+}
+
 // Aplica o tema no documento atual (atributo data-theme + variáveis CSS da
 // marca). Não sabe de qual área a preferência veio — quem chama já filtrou.
 export function applyThemePrefs(prefs: ThemePrefs) {
@@ -65,8 +82,18 @@ export function applyThemePrefs(prefs: ThemePrefs) {
   const root = document.documentElement;
   root.setAttribute("data-theme", prefs.mode);
   if (HEX_RE.test(prefs.accent)) {
+    const lum = getLuminance(prefs.accent);
+    const isLight = lum > 0.55;
+    const isVeryLight = lum > 0.85;
+    const brandText = prefs.mode === "light"
+      ? (lum > 0.45 ? "#0D1B2A" : prefs.accent)
+      : (lum < 0.25 ? "#FFFFFF" : prefs.accent);
+
     root.style.setProperty("--brand", prefs.accent);
-    root.style.setProperty("--brand-hover", shadeHex(prefs.accent, -15));
+    root.style.setProperty("--brand-hover", isVeryLight ? "#E2E8F0" : shadeHex(prefs.accent, -15));
+    root.style.setProperty("--brand-contrast", isLight ? "#0D1B2A" : "#FFFFFF");
+    root.style.setProperty("--brand-border", isVeryLight ? "#CBD5E1" : prefs.accent);
+    root.style.setProperty("--brand-text", brandText);
   }
 }
 
@@ -84,4 +111,4 @@ export function saveThemePrefs(area: ThemeArea, prefs: ThemePrefs) {
 // Script inline executado antes da hidratação, pra pintar a tela já no tema
 // certo (da área certa, decidida pelo caminho da própria URL) e evitar o
 // "flash" de tema claro seguido de troca pro escuro.
-export const THEME_INIT_SCRIPT = `(function(){try{var path=location.pathname;var area=path.indexOf('/vendas')===0?'vendas':(path.indexOf('/master')===0?'master':((path.indexOf('/painel')===0||path.indexOf('/perfil')===0)?'painel':null));if(!area)return;var r=localStorage.getItem('zaya:theme:'+area);var p=r?JSON.parse(r):null;var mode=p&&p.mode==='dark'?'dark':'light';var accent=p&&typeof p.accent==='string'&&/^#[0-9a-fA-F]{6}$/.test(p.accent)?p.accent:'${DEFAULT_THEME.accent}';var root=document.documentElement;root.setAttribute('data-theme',mode);root.style.setProperty('--brand',accent);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var path=location.pathname;var area=path.indexOf('/vendas')===0?'vendas':(path.indexOf('/master')===0?'master':((path.indexOf('/painel')===0||path.indexOf('/perfil')===0)?'painel':null));if(!area)return;var r=localStorage.getItem('zaya:theme:'+area);var p=r?JSON.parse(r):null;var mode=p&&p.mode==='dark'?'dark':'light';var accent=p&&typeof p.accent==='string'&&/^#[0-9a-fA-F]{6}$/.test(p.accent)?p.accent:'${DEFAULT_THEME.accent}';var root=document.documentElement;root.setAttribute('data-theme',mode);root.style.setProperty('--brand',accent);var n=parseInt(accent.slice(1),16);var lum=(0.2126*(n>>16&255)+0.7152*(n>>8&255)+0.0722*(n&255))/255;root.style.setProperty('--brand-contrast',lum>0.55?'#0D1B2A':'#FFFFFF');root.style.setProperty('--brand-border',lum>0.85?'#CBD5E1':accent);var brandText=mode==='light'?(lum>0.45?'#0D1B2A':accent):(lum<0.25?'#FFFFFF':accent);root.style.setProperty('--brand-text',brandText);}catch(e){}})();`;

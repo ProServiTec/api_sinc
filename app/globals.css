@@ -3,9 +3,12 @@
 :root {
   /* Zaya Sistemas — paleta oficial */
   --brand:           #2196F3;   /* azul elétrico (sinal de +) */
+  --brand-contrast:  #FFFFFF;   /* texto sobre a cor da marca (branco ou escuro para alto contraste) */
+  --brand-border:    #2196F3;   /* borda para evitar botão invisível se a marca for branca */
+  --brand-text:      #2196F3;   /* cor da marca para textos, ajustada para contraste quando a marca for muito clara */
   --brand-dark:      #0D1B2A;   /* azul marinho profundo (corpo do Z) */
   --brand-hover:     #1976D2;   /* hover de botões / links */
-  --bg:              #F0F4F8;   /* fundo cinza-azulado oficial do Zaya Sistemas (como no admin) */
+  --bg:              #F8FAFC;   /* fundo claro suave */
   --surface:         #FFFFFF;   /* cards e painéis brancos puros */
   --border:          #E2E8F0;   /* bordas suaves e elegantes */
   --text-primary:    #0D1B2A;   /* títulos */
@@ -13,10 +16,20 @@
   --green:           #1E9E5A;   /* status ativo / em dia */
   --red:             #E53935;   /* alertas / vencido */
   --amber:           #B45309;   /* pendente */
+
+  /* Barra lateral adaptável ao tema claro (fundo branco, texto nítido) */
+  --sidebar-bg:            #FFFFFF;
+  --sidebar-border:        #E2E8F0;
+  --sidebar-text:          #475569;
+  --sidebar-text-strong:   #0D1B2A;
+  --sidebar-text-muted:    #94A3B8;
+  --sidebar-hover-bg:      #F1F5F9;
+  --sidebar-active-bg:     rgba(33, 150, 243, 0.12);
+  --sidebar-logo-border:   #E2E8F0;
 }
 
 /* Tema escuro — ativado via atributo data-theme="dark" na <html>,
-   controlado pela tela de Aparência (Vendas → Aparência / Meu Perfil). */
+   controlado pela tela de Aparência (Vendas → Aparência / Meu Perfil / Configurações). */
 :root[data-theme="dark"] {
   --bg:              #0B1320;
   --surface:         #111C30;
@@ -24,6 +37,16 @@
   --text-primary:    #F1F5F9;
   --text-secondary:  #94A3B8;
   --amber:           #F59E0B;   /* o tom claro fica ilegível em fundo escuro */
+
+  /* Barra lateral no tema escuro */
+  --sidebar-bg:            #0D1B2A;
+  --sidebar-border:        rgba(255, 255, 255, 0.08);
+  --sidebar-text:          rgba(255, 255, 255, 0.65);
+  --sidebar-text-strong:   #FFFFFF;
+  --sidebar-text-muted:    rgba(255, 255, 255, 0.45);
+  --sidebar-hover-bg:      rgba(255, 255, 255, 0.07);
+  --sidebar-active-bg:     rgba(33, 150, 243, 0.2);
+  --sidebar-logo-border:   rgba(255, 255, 255, 0.08);
 }
 
 /* --brand e --brand-hover são a cor escolhida pelo usuário; são aplicadas via
