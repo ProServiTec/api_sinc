@@ -361,6 +361,12 @@ export default function DetalheCliente() {
           {detalhe.cliente.razao_social && <p className="clients-detalhe-sub">{detalhe.cliente.razao_social}</p>}
           {detalhe.cliente.cpf_cnpj && <p className="clients-detalhe-sub">{detalhe.cliente.cpf_cnpj}</p>}
 
+          <div className="clients-detalhe-acoes-topo">
+            <Link href={`/painel/clients/${params.token}/fiscal`} className="clients-fiscal-link">
+              📄 Relatórios Fiscais
+            </Link>
+          </div>
+
           <section className="painel-stats">
             <div className="painel-card">
               <span className="painel-card-label">Licenças ativas</span>

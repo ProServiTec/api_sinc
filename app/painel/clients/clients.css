@@ -604,3 +604,27 @@
 .clients-licenca-remover-btn:hover {
   text-decoration: underline;
 }
+
+/* Link para os relatórios fiscais no detalhe do cliente */
+.clients-detalhe-acoes-topo {
+  margin: 0.75rem 0 0.25rem;
+}
+
+.clients-fiscal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem;
+  border: 1.5px solid var(--brand);
+  border-radius: 8px;
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.clients-fiscal-link:hover {
+  background: var(--brand);
+  color: #fff;
+}
